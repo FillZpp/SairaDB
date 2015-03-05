@@ -1,0 +1,15 @@
+*.o
+*.a
+*.so
+*.exe
+
+# Go
+_obj
+_test
+bin/
+pkg/
+
+# Cargo
+*.lock
+target/
+
