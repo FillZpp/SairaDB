@@ -26,6 +26,8 @@ import (
 	"fmt"
 )
 
+var LocalIPs []string
+
 func readMastersFile() {
 	host, err := os.Hostname()
 	if err != nil {
@@ -33,35 +35,12 @@ func readMastersFile() {
 			"\nError: can not get local hostname")
 		os.Exit(3)
 	}
-	localIPs, err := net.LookupHost(host)
-
-	if len(MasterList) == 0 {
-		if err != nil || len(localIPs) == 0 {
-			fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
-			os.Exit(2)
-		} else if len(localIPs) > 1 {
-			fmt.Fprintln(os.Stderr,
-				"\nError:\nFind more than one ip for local hostname.")
-			fmt.Fprintln(os.Stderr,
-				"You should use option [--ip] to appoint one.")
-			os.Exit(3)
-		}
-		MasterList = append(MasterList, localIPs[0])
-	} else {  // Has option [--ip] in command line arguments
-		i := 0
-		for ; i < len(localIPs); i++ {
-			if MasterList[0] == localIPs[i] {
-				break
-			}
-		}
-		if i == len(localIPs) {
-			fmt.Fprintf(os.Stderr,
-				"\nError:\nGiven '%v' is not in local ip\n",
-				MasterList[0])
-			os.Exit(2)
-		}
+	
+	LocalIPs, err = net.LookupHost(host)
+	if err != nil || len(LocalIPs) == 0 {
+		fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
+		os.Exit(2)
 	}
-
 	
 	fl, err := os.Open(path.Join(ConfMap["conf-dir"] + "/masters"))
 	if err != nil {
@@ -127,11 +106,18 @@ func checkIP(host string, lineNum int) {
 		os.Exit(3)
 	}
 	
-	for _, m := range MasterList {
-		if ips[0] == m {
+	for _, i := range MasterList {
+		if ips[0] == i {
 			return
 		}
 	}
+
+	for _, i := range LocalIPs {
+		if ips[0] == i {
+			return
+		}
+	}
+			
 	MasterList = append(MasterList, ips[0])
 }
 

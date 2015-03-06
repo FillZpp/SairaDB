@@ -23,7 +23,6 @@ import (
 	"flag"
 	"config"
 	"os"
-	"net"
 	"path"
 )
 
@@ -37,6 +36,7 @@ func main() {
 	for k, v := range config.ConfMap {
 		fmt.Println(k, v)
 	}
+	fmt.Println(config.LocalIPs)
 	fmt.Println(config.MasterList)
 
 	// TODO signal handle
@@ -50,7 +50,6 @@ func handleFlag() (flagMap map[string]string) {
 	
 	confDir   := flag.String("conf-dir",
 		path.Join(config.Prefix, "/etc/sairadb"), "")
-	ip       := flag.String("ip", "", "")
 	isLocal  := flag.Bool("local", false, "")
 	logLevel := flag.String("log-level", "common", "")
 	dataDir  := flag.String("data-dir",
@@ -76,17 +75,6 @@ func handleFlag() (flagMap map[string]string) {
 	
 	if *isLocal {
 		flagMap["local"] = "on"
-	} else {
-		if len(*ip) > 0 {
-			ips, err := net.LookupHost(*ip)
-			if err != nil || len(ips) == 0 || len(ips) > 1 {
-				fmt.Fprintf(os.Stderr,
-					"\nError:\nSomething wrong with the appointed ip: %v\n",
-					*ip)
-				os.Exit(2)
-			}
-			config.MasterList = append(config.MasterList, ips[0])
-		}
 	}
 
 	switch *logLevel {
@@ -114,8 +102,6 @@ func usage() {
 		"    --conf-dir DIR     Find config files in <dir>")
 	fmt.Fprintln(os.Stderr,
 		"    --local            Clusters only on local machine")
-	fmt.Fprintln(os.Stderr,
-		"    --ip IP            Use appoint IP")
 	fmt.Fprintln(os.Stderr,
 		"    --log-level LEVEL  Define log level [error/common/slow/full]")
 	fmt.Fprintln(os.Stderr,
