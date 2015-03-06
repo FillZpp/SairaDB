@@ -8,7 +8,7 @@ export GOPATH=$CURDIR
 PREFIX="/usr/local/etc/sairadb/"
 
 echo "package config
-var Prefix = \"$PREFIX\"
+var prefix = \"$PREFIX\"
 " > src/config/prefix.go
 
 go install master

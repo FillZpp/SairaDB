@@ -1,3 +1,3 @@
 package config
-var Prefix = "/usr/local/etc/sairadb/"
+var prefix = "/usr/local/etc/sairadb/"
 

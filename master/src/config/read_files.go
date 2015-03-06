@@ -26,26 +26,29 @@ import (
 	"fmt"
 )
 
-func readMasters() {
-	host, err := os.Hostname()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "\nError: can not get local hostname")
-		os.Exit(1)
+func readMastersFile() {
+	if len(MasterList) == 0 {
+		host, err := os.Hostname()
+		if err != nil {
+			fmt.Fprintln(os.Stderr,
+				"\nError: can not get local hostname")
+			os.Exit(3)
+		}
+		
+		localIPs, err := net.LookupHost(host)
+		if err != nil || len(localIPs) == 0 {
+			fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
+			os.Exit(2)
+		} else if len(localIPs) > 1 {
+			fmt.Fprintln(os.Stderr,
+				"\nError: Find more than one ip for local hostname.\n",
+				"You should use option [-ip] to appoint one.")
+			os.Exit(3)
+		}
+		MasterList = append(MasterList, localIPs[0])
 	}
-	
-	localIPs, err := net.LookupHost(host)
-	if err != nil || len(localIPs) == 0 {
-		fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
-		os.Exit(2)
-	} else if len(localIPs) > 1 {
-		fmt.Fprintln(os.Stderr,
-			"\nError: Find more than one ip for local hostname.\n",
-			"You might appoint one using [option] -ip.")
-		os.Exit(3)
-	}
-	MasterList = append(MasterList, localIPs[0])
 
-	fl, err := os.Open(path.Join(CFGMap["etc_dir"] + "masters"))
+	fl, err := os.Open(path.Join(ConfMap["etc_dir"] + "masters"))
 	if err != nil {
 		return
 	}
@@ -96,15 +99,19 @@ func readMasters() {
 func checkIP(host string, lineNum int) {
 	ips, err := net.LookupHost(host)
 	if err != nil || len(ips) == 0 {
+		fmt.Fprintln(os.Stderr,
+			"\nError:")
 		fmt.Fprintf(os.Stderr,
-			"\nError: %v line %d, can not find ip from the hostname.\n",
-			path.Join(CFGMap["etc_dir"] + "masters"), lineNum)
-		os.Exit(4)
+			"%v line %d: %v\nCan not find ip from the hostname\n",
+			path.Join(ConfMap["etc_dir"] + "masters"), lineNum, host)
+		os.Exit(3)
 	} else if len(ips) > 1 {
 		fmt.Fprintln(os.Stderr,
-			"\nError: line %d, find more than one ip for the host.\n",
-			path.Join(CFGMap["etc_dir"] + "masters"), lineNum)
-		os.Exit(5)
+			"\nError:")
+		fmt.Fprintln(os.Stderr,
+			"%v line %d: %v\nFind more than one ip from the hostname.\n",
+			path.Join(ConfMap["etc_dir"] + "masters"), lineNum, host)
+		os.Exit(3)
 	}
 	
 	for _, m := range MasterList {
@@ -115,23 +122,23 @@ func checkIP(host string, lineNum int) {
 	MasterList = append(MasterList, ips[0])
 }
 
-func readConfFile() (fileMap map[string]string) {
-	fileMap = make(map[string]string)
-	
-	fl, err := os.Open(path.Join(CFGMap["etc_dir"] + "master.conf"))
+func readConfFile() {
+	fl, err := os.Open(path.Join(ConfMap["etc_dir"] + "master.conf"))
 	if err != nil {
-		return fileMap
+		return
 	}
 	defer fl.Close()
 
 	con, err := ioutil.ReadAll(fl)
 	if err != nil {
-		return fileMap
+		return
 	}
 
 	len := len(con)
 	i := 0
+	lineNum := 0
 	for {
+		lineNum++
 		prev := i
 		step := 0
 		var key string
@@ -141,13 +148,13 @@ func readConfFile() (fileMap map[string]string) {
 					key = string(con[prev:i])
 					step = 2
 				} else if step == 3 {
-					fileMap[key] = string(con[prev:i])
+					updateConf(key, string(con[prev:i]), lineNum)
 					step = 4
 				}
 				continue
 			} else if con[i] == '\n' {
 				if step == 3 {
-					fileMap[key] = string(con[prev:i])
+					updateConf(key, string(con[prev:i]), lineNum)
 				}
 				break
 			} else {
@@ -169,8 +176,19 @@ func readConfFile() (fileMap map[string]string) {
 		}
 		i++
 	}
-	
-	return fileMap
 }
 
+func updateConf(key, value string, lineNum int) {
+	_, ok := ConfMap[key]
+	if !ok {
+		fmt.Fprintln(os.Stderr,
+			"Error:")
+		fmt.Fprintf(os.Stderr,
+			"%v line %d: %v %v\nUnknown config.\n",
+			path.Join(ConfMap["etc_dir"] + "master.conf"), lineNum,
+			key, value)
+		os.Exit(3)
+	}
+	ConfMap[key] = value
+}
 

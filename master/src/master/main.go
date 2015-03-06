@@ -22,16 +22,58 @@ import (
 	"fmt"
 	"flag"
 	"config"
+	"os"
+	"net"
 )
 
 func main() {
-	flag.Parse()
+	handleFlag()
 	
 	config.Init()
-	for k, v := range config.CFGMap {
+
+	// test
+	for k, v := range config.ConfMap {
 		fmt.Println(k, v)
 	}
+	fmt.Println(config.MasterList)
 
 	// TODO signal handle
+	
+}
+
+func handleFlag() {
+	help1   := flag.Bool("h", false, "")
+	help2   := flag.Bool("help", false, "")
+	localIP := flag.String("ip", "", "")
+	etcDir := flag.String("etc-dir", "", "")
+
+	flag.Usage = usage
+	flag.Parse()
+
+	if *help1 || *help2 {
+		flag.Usage()
+		os.Exit(0)
+	}
+
+	if len(*localIP) > 0 {
+		ips, err := net.LookupHost(*localIP)
+		if err != nil || len(ips) == 0 || len(ips) > 1 {
+			fmt.Fprintf(os.Stderr, "Error:\nsomething wrong with the appointed ip %v", *localIP)
+			os.Exit(1)
+		}
+		config.MasterList = append(config.MasterList, ips[0])
+	}
+
+	if len(*etcDir) > 0 {
+		config.ConfMap["etc_dir"] = *etcDir
+	}
+}
+
+func usage() {
+	fmt.Fprintln(os.Stderr, "Usage: saira-master [OPTIONS] flag\n")
+	fmt.Fprintln(os.Stderr, "Options:")
+	fmt.Fprintln(os.Stderr, "    -h --help      Display usage")
+	fmt.Fprintln(os.Stderr, "    --etc-dir DIR  Find config files in <dir>")
+	fmt.Fprintln(os.Stderr, "    --ip IP        Use appoint IP")
 }
 

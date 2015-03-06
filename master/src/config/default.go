@@ -16,29 +16,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-// Package config generate CFGMap from configure file and default configures.
 package config
 
-import (
-	"sync"
-)
 
-var once sync.Once
-var ConfMap = make(map[string]string)
-var MasterList = make([]string, 0, 3)
+func initConf() {
+	ConfMap["serialize"] = "on"
 
-// Initialize configure for only once
-func Init() {
-	once.Do(func() {
-		initConf()
-
-		_, ok := ConfMap["etc_dir"]
-		if !ok {
-			ConfMap["etc_dir"] = prefix
-		}
-		readMastersFile()
-		readConfFile()
-	})
+	// TODO
 }
-
 
