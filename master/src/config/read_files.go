@@ -121,8 +121,8 @@ func checkIP(host string, lineNum int) {
 	MasterList = append(MasterList, ips[0])
 }
 
-func readConfFile() {
-	fl, err := os.Open(path.Join(ConfMap["conf-dir"] + "/master.conf"))
+func readConfFile(confDir string) {
+	fl, err := os.Open(path.Join(confDir + "/master.conf"))
 	if err != nil {
 		return
 	}

@@ -32,8 +32,8 @@ var HomeDir string
 // Initialize configure for only once
 func Init(flagMap map[string]string) {
 	initConf()
-	
-	readConfFile()
+
+	readConfFile(flagMap["conf-dir"])
 	for k, v := range flagMap {
 		ConfMap[k] = v
 	}
