@@ -20,25 +20,42 @@
 package config
 
 import (
-	"sync"
+	"strings"
+	"os"
+	"fmt"
 )
 
-var once sync.Once
 var ConfMap = make(map[string]string)
 var MasterList = make([]string, 0, 3)
+var HomeDir string
 
 // Initialize configure for only once
-func Init() {
-	once.Do(func() {
-		initConf()
-
-		_, ok := ConfMap["etc_dir"]
-		if !ok {
-			ConfMap["etc_dir"] = prefix
-		}
+func Init(flagMap map[string]string) {
+	initConf()
+	
+	readConfFile()
+	for k, v := range flagMap {
+		ConfMap[k] = v
+	}
+	
+	local, _ := ConfMap["local"]
+	if local != "on" {
 		readMastersFile()
-		readConfFile()
-	})
+	}
+}
+
+func GetHomePath() {
+	for _, env := range os.Environ() {
+		if strings.Index(env, "HOME=") == 0 ||
+			strings.Index(env, "HOMEPATH=") == 0 {
+			HomeDir = strings.SplitN(env, "=", 2)[1]
+		}
+	}
+	
+	if HomeDir == "" {
+		fmt.Fprintln(os.Stderr, "\nError:\nCan not find HOME path")
+		os.Exit(2)
+	}
 }
 
 

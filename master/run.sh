@@ -5,10 +5,10 @@ echo $CURDIR
 OLDGOPATH=$GOPATH
 export GOPATH=$CURDIR
 
-PREFIX="/usr/local/etc/sairadb/"
+PREFIX="/usr/local"
 
 echo "package config
-var prefix = \"$PREFIX\"
+var Prefix = \"$PREFIX\"
 " > src/config/prefix.go
 
 go install master

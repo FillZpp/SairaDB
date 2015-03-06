@@ -18,9 +18,13 @@
 
 package config
 
+import "path"
 
 func initConf() {
 	ConfMap["serialize"] = "on"
+	ConfMap["local"] = "off"
+	ConfMap["delete-old-log"] = "on"
+	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
 
 	// TODO
 }

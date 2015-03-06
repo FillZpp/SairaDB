@@ -27,28 +27,43 @@ import (
 )
 
 func readMastersFile() {
+	host, err := os.Hostname()
+	if err != nil {
+		fmt.Fprintln(os.Stderr,
+			"\nError: can not get local hostname")
+		os.Exit(3)
+	}
+	localIPs, err := net.LookupHost(host)
+
 	if len(MasterList) == 0 {
-		host, err := os.Hostname()
-		if err != nil {
-			fmt.Fprintln(os.Stderr,
-				"\nError: can not get local hostname")
-			os.Exit(3)
-		}
-		
-		localIPs, err := net.LookupHost(host)
 		if err != nil || len(localIPs) == 0 {
 			fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
 			os.Exit(2)
 		} else if len(localIPs) > 1 {
 			fmt.Fprintln(os.Stderr,
-				"\nError: Find more than one ip for local hostname.\n",
-				"You should use option [-ip] to appoint one.")
+				"\nError:\nFind more than one ip for local hostname.")
+			fmt.Fprintln(os.Stderr,
+				"You should use option [--ip] to appoint one.")
 			os.Exit(3)
 		}
 		MasterList = append(MasterList, localIPs[0])
+	} else {  // Has option [--ip] in command line arguments
+		i := 0
+		for ; i < len(localIPs); i++ {
+			if MasterList[0] == localIPs[i] {
+				break
+			}
+		}
+		if i == len(localIPs) {
+			fmt.Fprintf(os.Stderr,
+				"\nError:\nGiven '%v' is not in local ip\n",
+				MasterList[0])
+			os.Exit(2)
+		}
 	}
 
-	fl, err := os.Open(path.Join(ConfMap["etc_dir"] + "masters"))
+	
+	fl, err := os.Open(path.Join(ConfMap["conf-dir"] + "/masters"))
 	if err != nil {
 		return
 	}
@@ -99,18 +114,16 @@ func readMastersFile() {
 func checkIP(host string, lineNum int) {
 	ips, err := net.LookupHost(host)
 	if err != nil || len(ips) == 0 {
-		fmt.Fprintln(os.Stderr,
-			"\nError:")
+		fmt.Fprintln(os.Stderr, "\nError:")
 		fmt.Fprintf(os.Stderr,
 			"%v line %d: %v\nCan not find ip from the hostname\n",
-			path.Join(ConfMap["etc_dir"] + "masters"), lineNum, host)
+			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
 		os.Exit(3)
 	} else if len(ips) > 1 {
-		fmt.Fprintln(os.Stderr,
-			"\nError:")
+		fmt.Fprintln(os.Stderr, "\nError:")
 		fmt.Fprintln(os.Stderr,
 			"%v line %d: %v\nFind more than one ip from the hostname.\n",
-			path.Join(ConfMap["etc_dir"] + "masters"), lineNum, host)
+			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
 		os.Exit(3)
 	}
 	
@@ -123,7 +136,7 @@ func checkIP(host string, lineNum int) {
 }
 
 func readConfFile() {
-	fl, err := os.Open(path.Join(ConfMap["etc_dir"] + "master.conf"))
+	fl, err := os.Open(path.Join(ConfMap["conf-dir"] + "/master.conf"))
 	if err != nil {
 		return
 	}
@@ -185,7 +198,7 @@ func updateConf(key, value string, lineNum int) {
 			"Error:")
 		fmt.Fprintf(os.Stderr,
 			"%v line %d: %v %v\nUnknown config.\n",
-			path.Join(ConfMap["etc_dir"] + "master.conf"), lineNum,
+			path.Join(ConfMap["conf-dir"] + "/master.conf"), lineNum,
 			key, value)
 		os.Exit(3)
 	}
