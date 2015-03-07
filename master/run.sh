@@ -15,7 +15,7 @@ go install master
 
 export GOPATH=$OLDGOPATH
 
-echo "\033[32mRun:\033[0m"
+echo -e "\033[32mRun:\033[0m"
 
 ./bin/master $*
 

@@ -95,7 +95,7 @@ func handleFlag() (flagMap map[string]string) {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: saira-master [OPTIONS] flag\n")
+	fmt.Fprintln(os.Stderr, "Usage: saira-master [OPTIONS] FLAG\n")
 	fmt.Fprintln(os.Stderr, "Options:")
 	
 	fmt.Fprintln(os.Stderr,
