@@ -21,9 +21,12 @@ package main
 import (
 	"fmt"
 	"flag"
-	"config"
 	"os"
 	"path"
+
+	"common"
+	"config"
+	"meta"
 )
 
 func main() {
@@ -32,15 +35,19 @@ func main() {
 	
 	config.Init(flagMap)
 
-	// test
+	meta.Init()
+
+	// TODO signal handle
+
+	test()
+}
+
+func test() {
 	for k, v := range config.ConfMap {
 		fmt.Println(k, v)
 	}
 	fmt.Println(config.LocalIPs)
 	fmt.Println(config.MasterList)
-
-	// TODO signal handle
-	
 }
 
 func handleFlag() (flagMap map[string]string) {
@@ -48,7 +55,7 @@ func handleFlag() (flagMap map[string]string) {
 	help1   := flag.Bool("h", false, "")
 	help2   := flag.Bool("help", false, "")
 	
-	confDir   := flag.String("conf-dir",
+	confDir  := flag.String("conf-dir",
 		path.Join(config.Prefix, "/etc/sairadb"), "")
 	isLocal  := flag.Bool("local", false, "")
 	logLevel := flag.String("log-level", "common", "")
@@ -64,9 +71,9 @@ func handleFlag() (flagMap map[string]string) {
 	}
 
 	if len(*confDir) > 0 {
-		if !isDirExist(*confDir) {
+		if !common.IsDirExist(*confDir) {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nInvalid directory: %v\n",
+				"\nError:\nConfig directory does not exist: %v\n",
 				*confDir)
 			os.Exit(2)
 		}
@@ -108,14 +115,6 @@ func usage() {
 		"    --data-dir DIR     Save meta data and log in {DIR}/master")
 	fmt.Fprintln(os.Stderr,
 		"    -h --help          Display usage")
-}
-
-func isDirExist(dir string) bool {
-	fl, err := os.Stat(dir)
-	if err != nil {
-		return os.IsExist(err)
-	}
-	return fl.IsDir()
 }
 
 

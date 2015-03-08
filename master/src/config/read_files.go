@@ -63,13 +63,13 @@ func readMastersFile() {
 		for ; i < len; i++ {
 			if con[i] == ' ' {
 				if step == 1 {
-					checkIP(string(con[prev:i]), lineNum)
+					insertIP(string(con[prev:i]), lineNum)
 					step = 2
 				}
 				continue
 			} else if con[i] == '\n' {
 				if step == 1 {
-					checkIP(string(con[prev:i]), lineNum)
+					insertIP(string(con[prev:i]), lineNum)
 				}
 				break
 			} else {
@@ -90,7 +90,7 @@ func readMastersFile() {
 	}
 }
 
-func checkIP(host string, lineNum int) {
+func insertIP(host string, lineNum int) {
 	ips, err := net.LookupHost(host)
 	if err != nil || len(ips) == 0 {
 		fmt.Fprintln(os.Stderr, "\nError:")
@@ -106,14 +106,21 @@ func checkIP(host string, lineNum int) {
 		os.Exit(3)
 	}
 	
-	for _, i := range MasterList {
-		if ips[0] == i {
+	for _, v := range LocalIPs {
+		if ips[0] == v {
 			return
 		}
 	}
 
-	for _, i := range LocalIPs {
-		if ips[0] == i {
+	for i, v := range MasterList {
+		if ips[0] == v {
+			return
+		} else if ips[0] < v {
+			MasterList = append(MasterList, "")
+			for j := len(MasterList) - 1; j > i; j-- {
+				MasterList[j] = MasterList[j-1]
+			}
+			MasterList[i] = ips[0]
 			return
 		}
 	}

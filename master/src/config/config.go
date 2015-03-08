@@ -25,9 +25,11 @@ import (
 	"fmt"
 )
 
-var ConfMap = make(map[string]string)
-var MasterList = make([]string, 0, 3)
-var HomeDir string
+var (
+	ConfMap = make(map[string]string)
+	MasterList = make([]string, 0, 3)
+	HomeDir string
+)
 
 // Initialize configure for only once
 func Init(flagMap map[string]string) {
