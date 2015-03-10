@@ -48,6 +48,8 @@ func test() {
 	}
 	fmt.Println(config.LocalIPs)
 	fmt.Println(config.MasterList)
+	fmt.Println((*map[string]meta.NameSpace)(meta.NameSpaces))
+	fmt.Println((*map[string]meta.User)(meta.Users))
 }
 
 func handleFlag() (flagMap map[string]string) {
@@ -58,9 +60,8 @@ func handleFlag() (flagMap map[string]string) {
 	confDir  := flag.String("conf-dir",
 		path.Join(config.Prefix, "/etc/sairadb"), "")
 	isLocal  := flag.Bool("local", false, "")
-	logLevel := flag.String("log-level", "common", "")
-	dataDir  := flag.String("data-dir",
-		path.Join(config.HomeDir, "/saira_data"), "")
+	logLevel := flag.String("log-level", "", "")
+	dataDir  := flag.String("data-dir", "", "")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -84,19 +85,24 @@ func handleFlag() (flagMap map[string]string) {
 		flagMap["local"] = "on"
 	}
 
-	switch *logLevel {
-	case "error":  fallthrough
-	case "common": fallthrough
-	case "slow":   fallthrough
-	case "full":   flagMap["log-level"] = *logLevel
-	default: {
-		fmt.Fprintf(os.Stderr,
-			"\nError:\nInvalid given log-level: %v\n", *logLevel)
-		os.Exit(2)
-	}
+	if len(*logLevel) > 0 {
+		switch *logLevel {
+		case "error":  fallthrough
+		case "common": fallthrough
+		case "slow":   fallthrough
+		case "full":   flagMap["log-level"] = *logLevel
+		default: {
+			fmt.Fprintf(os.Stderr,
+				"\nError:\nInvalid given log-level: %v\n",
+				*logLevel)
+			os.Exit(2)
+		}
+		}
 	}
 
-	flagMap["data-dir"] = *dataDir
+	if len(*dataDir) > 0 {
+		flagMap["data-dir"] = *dataDir
+	}
 	
 	return flagMap
 }

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"unsafe"
 
 	"common"
 	"config"
@@ -30,9 +31,10 @@ import (
 
 var (
 	MetaDir string
-	NameSpaces map[string]NameSpace
-	DefaultNameSapce NameSpace
-	Users map[string]User
+	
+	NameSpaces unsafe.Pointer // map[string]NameSpace
+	
+	Users unsafe.Pointer // map[string]User
 )
 
 func Init() {
@@ -48,5 +50,10 @@ func Init() {
 			os.Exit(3)
 		}
 	}
+
+	initNS()
+	initUser()
+
 }
+
 

@@ -20,15 +20,28 @@ package common
 
 import (
 	"os"
+	"encoding/gob"
+	"bytes"
 )
 
 func IsDirExist(dir string) bool {
-	fl, err := os.Stat(dir)
+	flInfo, err := os.Stat(dir)
 
 	if err != nil {
 		return os.IsExist(err)
 	}
 
-	return fl.IsDir()
+	return flInfo.IsDir()
+}
+
+func DeepCopy(a, b interface{}) error {
+	buff := new(bytes.Buffer)
+	enc := gob.NewEncoder(buff)
+	dec := gob.NewDecoder(buff)
+	err := enc.Encode(a)
+	if err != nil {
+		return err
+	}
+	return dec.Decode(b)
 }
 

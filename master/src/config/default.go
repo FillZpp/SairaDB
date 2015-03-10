@@ -20,11 +20,18 @@ package config
 
 import "path"
 
+var BoolConfs = []string {
+	"serialize",
+	"local",
+	"delete-old-log",
+}
+
 func initConf() {
 	ConfMap["serialize"] = "on"
 	ConfMap["local"] = "off"
 	ConfMap["delete-old-log"] = "on"
 	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
+	ConfMap["log-level"] = "common"
 
 	// TODO
 }

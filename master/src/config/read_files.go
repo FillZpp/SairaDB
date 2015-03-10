@@ -108,6 +108,7 @@ func insertIP(host string, lineNum int) {
 	
 	for _, v := range LocalIPs {
 		if ips[0] == v {
+			LocalIPs = []string {v}
 			return
 		}
 	}
@@ -188,13 +189,37 @@ func updateConf(key, value string, lineNum int) {
 	_, ok := ConfMap[key]
 	if !ok {
 		fmt.Fprintln(os.Stderr,
-			"Error:")
+			"\nError:")
 		fmt.Fprintf(os.Stderr,
 			"%v line %d: %v %v\nUnknown config.\n",
 			path.Join(ConfMap["conf-dir"] + "/master.conf"), lineNum,
 			key, value)
 		os.Exit(3)
 	}
+
+	for _, v := range BoolConfs {
+		if key == v && !(value == "on" || value == "off") {
+			fmt.Fprintln(os.Stderr,
+				"\nError:\nInvalid config, this must be 'on' or 'off':\n")
+			fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
+		}
+	}
+
+	if key == "log-level" {
+		switch value {
+		case "error":  fallthrough
+		case "common": fallthrough
+		case "slow":   fallthrough
+		case "full":   break
+		default: {
+			fmt.Fprintf(os.Stderr,
+				"\nError:\nInvalid config:\nlog-level %v\n",
+				value)
+			os.Exit(3)
+		}
+		}
+	}
+			
 	ConfMap[key] = value
 }
 
