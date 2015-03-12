@@ -24,13 +24,15 @@ import (
 	"fmt"
 	"encoding/gob"
 	"unsafe"
+	"sync"
+	"errors"
 
-	"common"
+	//"common"
 )
 
 var (
 	nsFile *os.File
-	NSChan = make(chan []string, 100)
+	lock = sync.Mutex{}
 )
 
 type Table struct {
@@ -79,13 +81,17 @@ func initNS() {
 	}
 
 	NameSpaces = unsafe.Pointer(&_nameSpaces)
-
-	go nsCoroutine()
 }
-	
-func nsCoroutine() {
-	common.IsDirExist("/")
-}
-	
 
+func CreateNameSpace(name string) error {
+	lock.Lock()
+	defer lock.Unlock()
+	tmp := (*map[string]NameSpace)(NameSpaces)
+	_, ok := (*tmp)[name]
+	if ok {
+		return errors.New("The NameSpace already exists.")
+	}
+	(*tmp)[name] = NameSpace{ name, nil }
+	return nil
+}
 

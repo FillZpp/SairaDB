@@ -23,6 +23,7 @@ import (
 	"flag"
 	"os"
 	"path"
+	"runtime"
 
 	"common"
 	"config"
@@ -30,6 +31,8 @@ import (
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	
 	config.GetHomePath()
 	flagMap := handleFlag()
 	
