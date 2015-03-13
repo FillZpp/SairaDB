@@ -64,12 +64,12 @@ var (
 )
 
 func initUser() {
-	userFile, err := os.OpenFile(path.Join(MetaDir, "/user.meta"),
+	userFile, err := os.OpenFile(path.Join(metaDir, "/user.meta"),
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nCan not open meta file %v:\n",
-			path.Join(MetaDir, "/user.meta"))
+			path.Join(metaDir, "/user.meta"))
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(3)
 	}

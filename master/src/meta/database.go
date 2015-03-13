@@ -53,12 +53,12 @@ var (
 )
 
 func initDatabase() {
-	nsFile, err := os.OpenFile(path.Join(MetaDir, "/db.meta"),
+	nsFile, err := os.OpenFile(path.Join(metaDir, "/db.meta"),
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nCan not open meta file %v:\n",
-			path.Join(MetaDir, "/db.meta"))
+			path.Join(metaDir, "/db.meta"))
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(3)
 	}

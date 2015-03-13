@@ -16,44 +16,35 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-// Package meta for meta data control.
-package meta
+package slog
 
 import (
 	"fmt"
 	"os"
 	"path"
-	"unsafe"
 
 	"common"
 	"config"
 )
 
 var (
-	metaDir string
-	
-	Databases unsafe.Pointer // map[string]NameSpace
-	
-	Users unsafe.Pointer // map[string]User
+	logDir string
+	LogChan chan string
 )
 
 func Init() {
-	metaDir = path.Join(config.ConfMap["data-dir"], "/master/meta/")
+	logDir = path.Join(config.ConfMap["data-dir"], "log/")
 
-	if !common.IsDirExist(metaDir) {
-		err := os.MkdirAll(metaDir, 0700)
+	if !common.IsDirExist(logDir) {
+		err := os.MkdirAll(logDir, 0700)
 		if err != nil {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nCan not create meta dir %v:\n",
-				metaDir)
+				"\nError:\nCan not create log dir %v:\n")
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(3)
 		}
 	}
 
-	initDatabase()
-	initUser()
-
+	// TODO
 }
-
 

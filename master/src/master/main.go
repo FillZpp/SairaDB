@@ -27,7 +27,9 @@ import (
 
 	"common"
 	"config"
+	"stime"
 	"meta"
+	"slog"
 )
 
 func main() {
@@ -35,10 +37,11 @@ func main() {
 	
 	config.GetHomePath()
 	flagMap := handleFlag()
-	
 	config.Init(flagMap)
 
+	stime.Init()
 	meta.Init()
+	slog.Init()
 
 	// TODO signal handle
 
