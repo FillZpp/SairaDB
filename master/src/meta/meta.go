@@ -32,7 +32,7 @@ import (
 var (
 	MetaDir string
 	
-	NameSpaces unsafe.Pointer // map[string]NameSpace
+	Databases unsafe.Pointer // map[string]NameSpace
 	
 	Users unsafe.Pointer // map[string]User
 )
@@ -51,7 +51,7 @@ func Init() {
 		}
 	}
 
-	initNS()
+	initDatabase()
 	initUser()
 
 }

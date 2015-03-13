@@ -22,6 +22,7 @@ import (
 	"os"
 	"encoding/gob"
 	"bytes"
+	"time"
 )
 
 func IsDirExist(dir string) bool {
@@ -43,5 +44,10 @@ func DeepCopy(a, b interface{}) error {
 		return err
 	}
 	return dec.Decode(b)
+}
+
+func SetTimeout(ch chan bool, n uint) {
+	time.Sleep(time.Duration(n) * time.Millisecond)
+	ch<- true
 }
 

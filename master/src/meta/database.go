@@ -30,89 +30,86 @@ import (
 	"common"
 )
 
-const (
-	Read  = 1
-	Write = 2
-	Alter = 4
-	Delete = 8
-
-	Create = 16
-	Drop = 32
-	
-	CreateUser = 64
-	Super = 128
-)
-
-type User struct {
+type Table struct {
 	Name string
-	Password string
-	
-	GlobalAuth uint
-	NameSpaceAuth map[string]uint
-	TableAuth map[string]uint
+	Key string
+	Column map[string]string
 }
 
-type AlterUser struct {
+type Database struct {
+	Name string
+	Tables map[string]Table
+}
+
+type AlterDB struct {
 	Ch chan error
 	AlterType string
 	AlterCont []string
 }
 
 var (
-	userFile *os.File
-	UserChan = make(chan AlterUser, 100)
+	nsFile *os.File
+	DBChan = make(chan AlterDB, 100)
 )
 
-func initUser() {
-	userFile, err := os.OpenFile(path.Join(MetaDir, "/user.meta"),
+func initDatabase() {
+	nsFile, err := os.OpenFile(path.Join(MetaDir, "/db.meta"),
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nCan not open meta file %v:\n",
-			path.Join(MetaDir, "/user.meta"))
+			path.Join(MetaDir, "/db.meta"))
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(3)
 	}
 
-	var _users map[string]User
-	dec := gob.NewDecoder(userFile)
-	_ = dec.Decode(&_users)
-	if _users == nil {
-		_users = make(map[string]User)
+	var databases map[string]Database
+	dec := gob.NewDecoder(nsFile)
+	_ = dec.Decode(&databases)
+	if databases == nil {
+		databases = make(map[string]Database)
 	}
 
-	_, ok := _users["root"]
+	_, ok := databases["default"]
 	if !ok {
-		_users["root"] = User {
-			"root",
-			"",
-			Super,
-			map[string]uint{},
-			map[string]uint{},
+		databases["default"] = Database{
+			"default",
+			map[string]Table {
+				"kv": Table {
+					"kv",
+					"key",
+					map[string]string {
+						"key": "value",
+					},
+				},
+			},
 		}
 	}
 
-	Users = unsafe.Pointer(&_users)
-	go alterUserTask()
+	Databases = unsafe.Pointer(&databases)
+	go alterDBTask()
 }
 
-func alterUserTask() {
-	var tmp map[string]User
+func alterDBTask() {
+	var tmp map[string]Database
 	for {
 		if tmp == nil {
-			au := <-UserChan
-			if au.AlterType == "add_user" {
-				handleUserAlter((*map[string]User)(Users), au)
+			ad := <-DBChan
+			if ad.AlterType == "add_column" ||
+				ad.AlterType == "add_table" ||
+				ad.AlterType == "add_db" {
+				handleDBAlter((*map[string]Database)(Databases), ad)
 			} else {
-				common.DeepCopy((*map[string]User)(Users), &tmp)
-				handleUserAlter(&tmp, au)
+				common.DeepCopy((*map[string]Database)(Databases),
+					&tmp)
+				handleDBAlter(&tmp, ad)
 			}
 		} else {
 			ch := make(chan bool)
 			go common.SetTimeout(ch, 1)
 			select {
-			case au := <- UserChan:
-				handleUserAlter(&tmp, au)
+			case ad := <-DBChan:
+				handleDBAlter(&tmp, ad)
 				continue
 			case <-ch:
 			}
@@ -122,26 +119,22 @@ func alterUserTask() {
 	}
 }
 
-func handleUserAlter(users *map[string]User, au AlterUser) {
-	switch au.AlterType {
-	case "add_user":
-		_, ok := (*users)[au.AlterCont[0]]
+func handleDBAlter(dbs *map[string]Database, ad AlterDB) {
+	switch ad.AlterType {
+	case "add_db":
+		_, ok := (*dbs)[ad.AlterCont[0]]
 		if ok {
-			au.Ch<- errors.New("The user already exists.")
+			ad.Ch<- errors.New("The database already exists.")
 		}
-		(*users)[au.AlterCont[0]] = User{
-			au.AlterCont[1],
-			au.AlterCont[2],
-			0,
-			make(map[string]uint),
-			make(map[string]uint),
-		}
+		(*dbs)[ad.AlterCont[0]] = Database{ ad.AlterCont[1], nil }
 
 		// TODO
 		
 	default:
-		au.Ch<- errors.New("Undefined alter type.")
+		ad.Ch<- errors.New("Undefined alter type.")
 	}
-	au.Ch<- nil
+	ad.Ch<- nil
 }
+
+	
 

@@ -51,7 +51,7 @@ func test() {
 	}
 	fmt.Println(config.LocalIPs)
 	fmt.Println(config.MasterList)
-	fmt.Println((*map[string]meta.NameSpace)(meta.NameSpaces))
+	fmt.Println((*map[string]meta.Database)(meta.Databases))
 	fmt.Println((*map[string]meta.User)(meta.Users))
 }
 
