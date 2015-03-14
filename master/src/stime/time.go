@@ -23,8 +23,6 @@ import (
 	"sync/atomic"
 	"fmt"
 	"unsafe"
-
-	"common"
 )
 
 type Time struct {
@@ -37,75 +35,92 @@ type Time struct {
 	Second int
 }
 
+func fc(i int) string {
+	if i < 10 {
+		return fmt.Sprintf("0%v", i)
+	}
+	return fmt.Sprintf("%v", i)
+}
+
 func (tm *Time) Format() string {
 	return fmt.Sprintf("%v-%v-%v %v:%v:%v",
-		tm.Year, tm.Month, tm.Day,
-		tm.Hour, tm.Minute, tm.Second)
+		tm.Year, fc(tm.Month), fc(tm.Day),
+		fc(tm.Hour), fc(tm.Minute), fc(tm.Second))
+}
+
+func (tm *Time) Cat() string {
+	return fmt.Sprintf("%v-%v-%v_%v-%v-%v",
+		tm.Year, fc(tm.Month), fc(tm.Day),
+		fc(tm.Hour), fc(tm.Minute), fc(tm.Second))
 }
 
 var (
 	UnixTime int64
-	tm unsafe.Pointer
+	Tm unsafe.Pointer
 )
 
 func Init() {
-	tm = unsafe.Pointer(&Time{-1, -1, -1, -1, -1, -1})
+	ot := time.Now()
+	Tm = unsafe.Pointer(&Time{
+		ot.Year(), int(ot.Month()), ot.Day(),
+		ot.Hour(), ot.Minute(), ot.Second()})
+	UnixTime = ot.UnixNano()
 	go task()
 }
 
 func task() {
 	var i int
 	var ot time.Time
-	var nt Time
+	tm := (*Time)(Tm)
+	nt := Time{ tm.Year, tm.Month, tm.Day,
+		tm.Hour, tm.Minute, tm.Second }
 	for {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 20)
 		ot = time.Now()
 
 		atomic.SwapInt64(&UnixTime, ot.UnixNano())
 
 		i = ot.Second()
-		if (*Time)(tm).Second == i {
+		if (*Time)(Tm).Second == i {
 			continue
 		}
-		
-		common.DeepCopy((*Time)(tm), &nt)
 		nt.Second = i
 
 		i = ot.Minute()
 		if nt.Minute == i {
-			atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 			continue
 		}
 		nt.Minute = i
 		
 		i = ot.Hour()
 		if nt.Hour == i {
-			atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 			continue
 		}
 		nt.Hour = i
 		
 		i = ot.Day()
 		if nt.Day == i {
-			atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 			continue
 		}
 		nt.Day = i
 
 		i = int(ot.Month())
 		if nt.Month == i {
-			atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 			continue
 		}
 		nt.Month = i
 
 		i = ot.Year()
 		if nt.Minute == i {
-			atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 			continue
 		}
 		nt.Year = i
-		atomic.SwapPointer(&tm, unsafe.Pointer(&nt))
+		atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
 	}
 }
 
