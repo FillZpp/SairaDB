@@ -32,7 +32,7 @@ func readMastersFile() {
 	host, err := os.Hostname()
 	if err != nil {
 		fmt.Fprintln(os.Stderr,
-			"\nError: can not get local hostname")
+			"\nError: can not get local hostname.")
 		os.Exit(3)
 	}
 	
@@ -93,15 +93,13 @@ func readMastersFile() {
 func insertIP(host string, lineNum int) {
 	ips, err := net.LookupHost(host)
 	if err != nil || len(ips) == 0 {
-		fmt.Fprintln(os.Stderr, "\nError:")
 		fmt.Fprintf(os.Stderr,
-			"%v line %d: %v\nCan not find ip from the hostname\n",
+			"\nError:\n%v line %d: %v\nCan not find ip from the hostname\n",
 			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
 		os.Exit(3)
 	} else if len(ips) > 1 {
-		fmt.Fprintln(os.Stderr, "\nError:")
 		fmt.Fprintln(os.Stderr,
-			"%v line %d: %v\nFind more than one ip from the hostname.\n",
+			"\nError:\n%v line %d: %v\nFind more than one ip from the hostname.\n",
 			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
 		os.Exit(3)
 	}
@@ -188,10 +186,8 @@ func readConfFile(confDir string) {
 func updateConf(key, value string, lineNum int) {
 	_, ok := ConfMap[key]
 	if !ok {
-		fmt.Fprintln(os.Stderr,
-			"\nError:")
 		fmt.Fprintf(os.Stderr,
-			"%v line %d: %v %v\nUnknown config.\n",
+			"\nError:\n%v line %d: %v %v\nUnknown config.\n",
 			path.Join(ConfMap["conf-dir"] + "/master.conf"), lineNum,
 			key, value)
 		os.Exit(3)
@@ -208,7 +204,6 @@ func updateConf(key, value string, lineNum int) {
 	if key == "log-level" {
 		switch value {
 		case "error":  fallthrough
-		case "common": fallthrough
 		case "slow":   fallthrough
 		case "full":   break
 		default: {

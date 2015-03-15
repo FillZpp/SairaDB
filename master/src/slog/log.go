@@ -44,8 +44,8 @@ func Init() {
 		err := os.MkdirAll(logDir, 0700)
 		if err != nil {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nCan not create log dir %v:\n")
-			fmt.Fprintln(os.Stderr, err.Error())
+				"\nError:\nCan not create log dir %v:\n%v\n",
+				err.Error())
 			os.Exit(3)
 		}
 	}
@@ -64,7 +64,7 @@ func newLogFile() {
 			"\nError:\nCan not create new log file %v:\n%v\n",
 			fname,
 			err.Error())
-		os.Exit(3)
+		os.Exit(4)
 	}
 	fileSize = 0
 }
@@ -95,15 +95,20 @@ func task() {
 			l, err := logFile.WriteString(cache)
 			if err != nil {
 				fmt.Fprintf(os.Stderr,
-					"\nError:\n")
+					"\nError:\nWrite log file error:\n%v\n",
+					err.Error())
+				os.Exit(4)
 			}
 			
 			fileSize += l
 			cache = ""
 			size = 0
-		}
 
-			//if 
+			if fileSize >= 1e9 {
+				logFile.Close()
+				newLogFile()
+			}
+		}
 	}
 }
 

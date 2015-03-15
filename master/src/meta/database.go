@@ -79,7 +79,7 @@ func initDatabase() {
 					"kv",
 					"key",
 					map[string]string {
-						"key": "value",
+						"key": "Any",
 					},
 				},
 			},
@@ -102,7 +102,9 @@ func alterDBTask() {
 			} else {
 				common.DeepCopy((*map[string]Database)(Databases),
 					&tmp)
-				handleDBAlter(&tmp, ad)
+				if !handleDBAlter(&tmp, ad) {
+					tmp = nil
+				}
 			}
 		} else {
 			ch := make(chan bool)
@@ -119,12 +121,13 @@ func alterDBTask() {
 	}
 }
 
-func handleDBAlter(dbs *map[string]Database, ad AlterDB) {
+func handleDBAlter(dbs *map[string]Database, ad AlterDB) bool {
 	switch ad.AlterType {
 	case "add_db":
 		_, ok := (*dbs)[ad.AlterCont[0]]
 		if ok {
 			ad.Ch<- errors.New("The database already exists.")
+			return false
 		}
 		(*dbs)[ad.AlterCont[0]] = Database{ ad.AlterCont[1], nil }
 
@@ -132,8 +135,10 @@ func handleDBAlter(dbs *map[string]Database, ad AlterDB) {
 		
 	default:
 		ad.Ch<- errors.New("Undefined alter type.")
+		return false
 	}
 	ad.Ch<- nil
+	return true
 }
 
 	

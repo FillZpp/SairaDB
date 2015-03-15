@@ -26,12 +26,12 @@ var BoolConfs = []string {
 	"delete-old-log",
 }
 
-func initConf() {
+func defaultConf() {
 	ConfMap["serialize"] = "on"
 	ConfMap["local"] = "off"
 	ConfMap["delete-old-log"] = "on"
 	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
-	ConfMap["log-level"] = "common"
+	ConfMap["log-level"] = "error"
 
 	// TODO
 }

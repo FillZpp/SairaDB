@@ -32,9 +32,8 @@ import (
 var (
 	metaDir string
 	
-	Databases unsafe.Pointer // map[string]NameSpace
-	
-	Users unsafe.Pointer // map[string]User
+	Databases unsafe.Pointer  // map[string]NameSpace
+	Users unsafe.Pointer      // map[string]User
 )
 
 func Init() {
@@ -44,9 +43,9 @@ func Init() {
 		err := os.MkdirAll(metaDir, 0700)
 		if err != nil {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nCan not create meta dir %v:\n",
-				metaDir)
-			fmt.Fprintln(os.Stderr, err.Error())
+				"\nError:\nCan not create meta dir %v:\n%v\n",
+				metaDir,
+				err.Error())
 			os.Exit(3)
 		}
 	}

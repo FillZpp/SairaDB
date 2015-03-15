@@ -31,9 +31,8 @@ var (
 	HomeDir string
 )
 
-// Initialize configure for only once
 func Init(flagMap map[string]string) {
-	initConf()
+	defaultConf()
 
 	readConfFile(flagMap["conf-dir"])
 	for k, v := range flagMap {
@@ -55,7 +54,7 @@ func GetHomePath() {
 	}
 	
 	if HomeDir == "" {
-		fmt.Fprintln(os.Stderr, "\nError:\nCan not find HOME path")
+		fmt.Fprintln(os.Stderr, "\nError:\nCan not find HOME path in environment.")
 		os.Exit(2)
 	}
 }

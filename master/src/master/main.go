@@ -23,7 +23,6 @@ import (
 	"flag"
 	"os"
 	"path"
-	"runtime"
 
 	"common"
 	"config"
@@ -33,8 +32,6 @@ import (
 )
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	
 	config.GetHomePath()
 	flagMap := handleFlag()
 	config.Init(flagMap)
@@ -94,7 +91,6 @@ func handleFlag() (flagMap map[string]string) {
 	if len(*logLevel) > 0 {
 		switch *logLevel {
 		case "error":  fallthrough
-		case "common": fallthrough
 		case "slow":   fallthrough
 		case "full":   flagMap["log-level"] = *logLevel
 		default: {
@@ -122,7 +118,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr,
 		"    --local            Clusters only on local machine")
 	fmt.Fprintln(os.Stderr,
-		"    --log-level LEVEL  Define log level [error/common/slow/full]")
+		"    --log-level LEVEL  Define log level [error/slow/full]")
 	fmt.Fprintln(os.Stderr,
 		"    --data-dir DIR     Save meta data and log in {DIR}/master")
 	fmt.Fprintln(os.Stderr,
