@@ -36,9 +36,9 @@ func IsDirExist(dir string) bool {
 }
 
 func DeepCopy(a, b interface{}) error {
-	buff := new(bytes.Buffer)
-	enc := gob.NewEncoder(buff)
-	dec := gob.NewDecoder(buff)
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	dec := gob.NewDecoder(buf)
 	err := enc.Encode(a)
 	if err != nil {
 		return err

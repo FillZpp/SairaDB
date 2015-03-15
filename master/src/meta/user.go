@@ -26,6 +26,9 @@ import (
 	"unsafe"
 	"errors"
 	"sync/atomic"
+	"strings"
+	"strconv"
+	"bytes"
 
 	"common"
 )
@@ -64,7 +67,8 @@ var (
 )
 
 func initUser() {
-	userFile, err := os.OpenFile(path.Join(metaDir, "/user.meta"),
+	var err error
+	userFile, err = os.OpenFile(path.Join(metaDir, "/user.meta"),
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
@@ -74,16 +78,29 @@ func initUser() {
 		os.Exit(3)
 	}
 
-	var _users map[string]User
-	dec := gob.NewDecoder(userFile)
-	_ = dec.Decode(&_users)
-	if _users == nil {
-		_users = make(map[string]User)
+	var users map[string]User
+	bt := make([]byte, 10)
+	n, err := userFile.Read(bt)
+	if err == nil && n > 0 {
+		strs := strings.SplitN(string(bt), ";", 2)
+		length, _ := strconv.Atoi(strs[0])
+		if length + len(strs[0]) + 1 > 10 {
+			bt = make([]byte, length + len(strs[0]) + 1 - 10)
+			userFile.Read(bt)
+			strs[1] += string(bt)
+		}
+		buf := bytes.NewBufferString(strs[1])
+		dec := gob.NewDecoder(buf)
+		_ = dec.Decode(&users)
+	}
+	
+	if users == nil {
+		users = make(map[string]User)
 	}
 
-	_, ok := _users["root"]
+	_, ok := users["root"]
 	if !ok {
-		_users["root"] = User {
+		users["root"] = User {
 			"root",
 			"",
 			Super,
@@ -92,15 +109,37 @@ func initUser() {
 		}
 	}
 
-	Users = unsafe.Pointer(&_users)
+	Users = unsafe.Pointer(&users)
 	go alterUserTask()
 }
 
+func syncUserFile() {
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	enc.Encode((*map[string]User)(Users))
+	s := buf.String()
+	s = strconv.Itoa(len(s)) + ";" + s
+
+	userFile.Seek(0, 0)
+	userFile.WriteString(s)
+}
+
 func alterUserTask() {
+	syncUserFile()
 	var tmp map[string]User
+	var au AlterUser
 	for {
 		if tmp == nil {
-			au := <-UserChan
+			select {
+			case <-ToClose:
+				userFile.Close()
+				GotIt<- true
+				for {
+					au := <-UserChan
+					au.Ch<- errors.New("This master is to close.")
+				}
+			case au = <-UserChan:
+			}
 			if au.AlterType == "add_user" {
 				handleUserAlter((*map[string]User)(Users), au)
 			} else {
@@ -113,13 +152,14 @@ func alterUserTask() {
 			ch := make(chan bool)
 			go common.SetTimeout(ch, 1)
 			select {
-			case au := <- UserChan:
+			case au = <- UserChan:
 				handleUserAlter(&tmp, au)
 				continue
 			case <-ch:
 			}
-			atomic.SwapPointer(&Databases, unsafe.Pointer(&tmp))
+			atomic.StorePointer(&Databases, unsafe.Pointer(&tmp))
 			tmp = nil
+			syncUserFile()
 		}
 	}
 }

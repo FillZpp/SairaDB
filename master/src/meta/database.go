@@ -26,6 +26,9 @@ import (
 	"unsafe"
 	"errors"
 	"sync/atomic"
+	"strings"
+	"strconv"
+	"bytes"
 
 	"common"
 )
@@ -48,12 +51,13 @@ type AlterDB struct {
 }
 
 var (
-	nsFile *os.File
+	dbFile *os.File
 	DBChan = make(chan AlterDB, 100)
 )
 
 func initDatabase() {
-	nsFile, err := os.OpenFile(path.Join(metaDir, "/db.meta"),
+	var err error
+	dbFile, err = os.OpenFile(path.Join(metaDir, "/db.meta"),
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
@@ -64,8 +68,22 @@ func initDatabase() {
 	}
 
 	var databases map[string]Database
-	dec := gob.NewDecoder(nsFile)
-	_ = dec.Decode(&databases)
+	bt := make([]byte, 10)
+	n, err := dbFile.Read(bt)
+	if err == nil && n > 0 {
+		strs := strings.SplitN(string(bt), ";", 2)
+		length, _ := strconv.Atoi(strs[0])
+		if length + len(strs[0]) + 1 > 10 {
+			bt = make([]byte, length + len(strs[0]) + 1 - 10)
+			dbFile.Read(bt)
+			strs[1] += string(bt)
+		}
+		buf := bytes.NewBufferString(strs[1])
+		
+		dec := gob.NewDecoder(buf)
+		_ = dec.Decode(&databases)
+	}
+	
 	if databases == nil {
 		databases = make(map[string]Database)
 	}
@@ -90,11 +108,33 @@ func initDatabase() {
 	go alterDBTask()
 }
 
+func syncDBFile() {
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	enc.Encode((*map[string]Database)(atomic.LoadPointer(&Databases)))
+	s := buf.String()
+	s = strconv.Itoa(len(s)) + ";" + s
+	
+	dbFile.Seek(0, 0)
+	dbFile.WriteString(s)
+}
+
 func alterDBTask() {
+	syncDBFile()
 	var tmp map[string]Database
+	var ad AlterDB
 	for {
 		if tmp == nil {
-			ad := <-DBChan
+			select {
+			case <-ToClose:
+				dbFile.Close()
+				GotIt<- true
+				for {
+					ad = <-DBChan
+					ad.Ch<- errors.New("This master is to close.")
+				}
+			case ad = <-DBChan:
+			}
 			if ad.AlterType == "add_column" ||
 				ad.AlterType == "add_table" ||
 				ad.AlterType == "add_db" {
@@ -110,13 +150,14 @@ func alterDBTask() {
 			ch := make(chan bool)
 			go common.SetTimeout(ch, 1)
 			select {
-			case ad := <-DBChan:
+			case ad = <-DBChan:
 				handleDBAlter(&tmp, ad)
 				continue
 			case <-ch:
 			}
-			atomic.SwapPointer(&Databases, unsafe.Pointer(&tmp))
+			atomic.StorePointer(&Databases, unsafe.Pointer(&tmp))
 			tmp = nil
+			syncDBFile()
 		}
 	}
 }

@@ -23,12 +23,15 @@ import (
 	"flag"
 	"os"
 	"path"
+	"sync/atomic"
+	"time"
 
 	"common"
 	"config"
 	"stime"
 	"meta"
 	"slog"
+	"ssignal"
 )
 
 func main() {
@@ -39,8 +42,7 @@ func main() {
 	stime.Init()
 	meta.Init()
 	slog.Init()
-
-	// TODO signal handle
+	ssignal.Init()
 
 	test()
 }
@@ -51,8 +53,9 @@ func test() {
 	}
 	fmt.Println(config.LocalIPs)
 	fmt.Println(config.MasterList)
-	fmt.Println((*map[string]meta.Database)(meta.Databases))
-	fmt.Println((*map[string]meta.User)(meta.Users))
+	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
+	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
+	time.Sleep(time.Second * 5)
 }
 
 func handleFlag() (flagMap map[string]string) {

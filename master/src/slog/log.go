@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sync/atomic"
 
 	"common"
 	"config"
@@ -34,6 +35,10 @@ var (
 	
 	logFile *os.File
 	fileSize int
+
+	ToClose = make(chan bool)
+	GotIt = make(chan bool)
+	Sig string
 )
 
 func Init() {
@@ -72,9 +77,21 @@ func newLogFile() {
 func task() {
 	cache := ""
 	size := 0
+	var newLog string
 	for {
 		if size == 0 {
-			newLog := <-LogChan
+			select {
+			case <-ToClose:
+				logFile.WriteString((*stime.Time)(
+					atomic.LoadPointer(&(stime.Tm))).Format() +
+					" This master closed by signal " + Sig + ".\n")
+				logFile.Close()
+				GotIt<- true
+				for {
+					<-LogChan
+				}
+			case newLog = <-LogChan:
+			}
 			cache = (*stime.Time)(stime.Tm).Format() +
 				" " + newLog + "\n"
 			size++
@@ -83,8 +100,8 @@ func task() {
 				ch := make(chan bool)
 				go common.SetTimeout(ch, 10)
 				select {
-				case newLog := <-LogChan:
-					cache = (*stime.Time)(stime.Tm).Format() +
+				case newLog = <-LogChan:
+					cache = (*stime.Time)(atomic.LoadPointer(&(stime.Tm))).Format() +
 						" " + newLog + "\n"
 					size++
 					continue

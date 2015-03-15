@@ -34,6 +34,9 @@ var (
 	
 	Databases unsafe.Pointer  // map[string]NameSpace
 	Users unsafe.Pointer      // map[string]User
+
+	ToClose = make(chan bool, 2)
+	GotIt = make(chan bool)
 )
 
 func Init() {
