@@ -32,7 +32,7 @@ type Time struct {
 
 	Hour   int
 	Minute int
-	Second int
+	Second int32
 }
 
 func fc(i int) string {
@@ -42,16 +42,23 @@ func fc(i int) string {
 	return fmt.Sprintf("%v", i)
 }
 
+func fc32(i int32) string {
+	if i < 10 {
+		return fmt.Sprintf("0%v", i)
+	}
+	return fmt.Sprintf("%v", i)
+}
+
 func (tm *Time) Format() string {
 	return fmt.Sprintf("%v-%v-%v %v:%v:%v",
 		tm.Year, fc(tm.Month), fc(tm.Day),
-		fc(tm.Hour), fc(tm.Minute), fc(tm.Second))
+		fc(tm.Hour), fc(tm.Minute), fc32(tm.Second))
 }
 
 func (tm *Time) Cat() string {
 	return fmt.Sprintf("%v-%v-%v_%v-%v-%v",
 		tm.Year, fc(tm.Month), fc(tm.Day),
-		fc(tm.Hour), fc(tm.Minute), fc(tm.Second))
+		fc(tm.Hour), fc(tm.Minute), fc32(tm.Second))
 }
 
 var (
@@ -63,13 +70,14 @@ func Init() {
 	ot := time.Now()
 	Tm = unsafe.Pointer(&Time{
 		ot.Year(), int(ot.Month()), ot.Day(),
-		ot.Hour(), ot.Minute(), ot.Second()})
+		ot.Hour(), ot.Minute(), int32(ot.Second())})
 	UnixTime = ot.UnixNano()
 	go task()
 }
 
 func task() {
 	var i int
+	var j int32
 	var ot time.Time
 	tm := (*Time)(Tm)
 	nt := Time{ tm.Year, tm.Month, tm.Day,
@@ -80,15 +88,15 @@ func task() {
 
 		atomic.SwapInt64(&UnixTime, ot.UnixNano())
 
-		i = ot.Second()
-		if (*Time)(Tm).Second == i {
+		j = int32(ot.Second())
+		if (*Time)(Tm).Second == j {
 			continue
 		}
-		nt.Second = i
+		nt.Second = j
 
 		i = ot.Minute()
 		if nt.Minute == i {
-			atomic.SwapPointer(&Tm, unsafe.Pointer(&nt))
+			atomic.SwapInt32(&((*Time)(Tm).Second), j)
 			continue
 		}
 		nt.Minute = i
