@@ -27,10 +27,8 @@ import (
 )
 
 type MasterStatus struct {
-	ip string
-	connected bool
-
-	
+	Ip string
+	Connected bool
 }
 
 var (
@@ -48,7 +46,6 @@ func Init() {
 			config.ConfMap["master-port"])
 		os.Exit(3)
 	}
-
 	// TODO unix socket
 
 	go task()

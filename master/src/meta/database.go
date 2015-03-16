@@ -148,7 +148,7 @@ func alterDBTask() {
 			}
 		} else {
 			ch := make(chan bool)
-			go common.SetTimeout(ch, 1)
+			go common.SetTimeout(ch, 10)
 			select {
 			case ad = <-DBChan:
 				handleDBAlter(&tmp, ad)

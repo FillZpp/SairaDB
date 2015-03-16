@@ -105,7 +105,7 @@ func task() {
 		} else {
 			if size < 100 {
 				ch := make(chan bool)
-				go common.SetTimeout(ch, 10)
+				go common.SetTimeout(ch, 100)
 				select {
 				case newLog = <-LogChan:
 					cache = (*stime.Time)(atomic.LoadPointer(&(stime.Tm))).Format() +

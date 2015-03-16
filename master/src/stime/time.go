@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"fmt"
 	"unsafe"
+	"container/list"
 )
 
 type Time struct {
@@ -64,6 +65,14 @@ func (tm *Time) Cat() string {
 var (
 	UnixTime int64
 	Tm unsafe.Pointer
+
+	CurQueryNum uint64 = 0
+
+	QNOne     uint64 = 0
+	QNFive    uint64 = 0
+	QNFifteen uint64 = 0
+
+	SC uint64 = 0
 )
 
 func Init() {
@@ -82,6 +91,14 @@ func task() {
 	tm := (*Time)(Tm)
 	nt := Time{ tm.Year, tm.Month, tm.Day,
 		tm.Hour, tm.Minute, tm.Second }
+	fiveList := list.New()
+	fifList := list.New()
+	for i := 0; i < 5; i ++ {
+		fiveList.PushFront(0)
+	}
+	for i := 0; i < 10; i ++ {
+		fifList.PushFront(0)
+	}
 	for {
 		time.Sleep(time.Millisecond * 20)
 		ot = time.Now()
@@ -100,6 +117,18 @@ func task() {
 			continue
 		}
 		nt.Minute = i
+
+		// record query number
+		num1 := atomic.SwapUint64(&CurQueryNum, 0)
+		atomic.SwapUint64(&QNOne, num1)
+		
+		fiveList.PushFront(num1)
+		num2 := fiveList.Remove(fiveList.Back()).(uint64)
+		atomic.AddUint64(&QNFive, num1 - num2)
+
+		fifList.PushFront(num2)
+		num3 := fifList.Remove(fifList.Back()).(uint64)
+		atomic.AddUint64(&QNFifteen, num1 - num3)
 		
 		i = ot.Hour()
 		if nt.Hour == i {
