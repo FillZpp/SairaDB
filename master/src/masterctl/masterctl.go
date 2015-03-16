@@ -29,6 +29,7 @@ import (
 type MasterStatus struct {
 	ip string
 	connected bool
+
 	
 }
 
