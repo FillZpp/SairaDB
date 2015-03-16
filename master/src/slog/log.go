@@ -38,7 +38,7 @@ var (
 
 	ToClose = make(chan bool)
 	GotIt = make(chan bool)
-	Sig string
+	ExitLog string
 )
 
 func Init() {
@@ -55,22 +55,29 @@ func Init() {
 		}
 	}
 
-	newLogFile()
+	newLogFile(true)
 	go task()
 }
 
-func newLogFile() {
+func newLogFile(b bool) {
 	fname := path.Join(logDir,
 		"/" + (*stime.Time)(stime.Tm).Cat() + ".log")
-	var err error
-	logFile, err = os.OpenFile(fname, os.O_RDWR | os.O_CREATE, 0600)
+	lf, err := os.OpenFile(fname, os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Fprintf(os.Stderr,
-			"\nError:\nCan not create new log file %v:\n%v\n",
-			fname,
-			err.Error())
-		os.Exit(4)
+		if b {
+			fmt.Fprintf(os.Stderr,
+				"\nError:\nCan not create new log file %v:\n%v\n",
+				fname,
+				err.Error())
+			os.Exit(3)
+		} else {
+			common.ExitChan<- fmt.Sprintf("Error: Can not create new log file %v: %v",
+				fname,
+				err.Error())
+		}
 	}
+	logFile.Close()
+	logFile = lf
 	fileSize = 0
 }
 
@@ -84,7 +91,7 @@ func task() {
 			case <-ToClose:
 				logFile.WriteString((*stime.Time)(
 					atomic.LoadPointer(&(stime.Tm))).Format() +
-					" This master closed by signal " + Sig + ".\n")
+					" This master closed " + ExitLog + ".\n")
 				logFile.Close()
 				GotIt<- true
 				for {
@@ -122,8 +129,7 @@ func task() {
 			size = 0
 
 			if fileSize >= 1e9 {
-				logFile.Close()
-				newLogFile()
+				newLogFile(false)
 			}
 		}
 	}

@@ -28,6 +28,7 @@ import (
 var (
 	ConfMap = make(map[string]string)
 	MasterList = make([]string, 0, 5)
+	LocalMaster string
 	HomeDir string
 )
 

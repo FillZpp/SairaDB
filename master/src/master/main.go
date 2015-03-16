@@ -24,7 +24,7 @@ import (
 	"os"
 	"path"
 	"sync/atomic"
-	"time"
+	"crypto/md5"
 
 	"common"
 	"config"
@@ -32,6 +32,7 @@ import (
 	"meta"
 	"slog"
 	"ssignal"
+	"masterctl"
 )
 
 func main() {
@@ -44,6 +45,8 @@ func main() {
 	slog.Init()
 	ssignal.Init()
 
+	masterctl.Init()
+
 	test()
 }
 
@@ -51,11 +54,10 @@ func test() {
 	for k, v := range config.ConfMap {
 		fmt.Println(k, v)
 	}
-	fmt.Println(config.LocalIPs)
+	fmt.Printf("\n%v\n", config.LocalMaster)
 	fmt.Println(config.MasterList)
 	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
-	time.Sleep(time.Second * 5)
 }
 
 func handleFlag() (flagMap map[string]string) {
@@ -68,6 +70,8 @@ func handleFlag() (flagMap map[string]string) {
 	isLocal  := flag.Bool("local", false, "")
 	logLevel := flag.String("log-level", "", "")
 	dataDir  := flag.String("data-dir", "", "")
+	
+	cookie := flag.String("cookie", "", "")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -108,7 +112,14 @@ func handleFlag() (flagMap map[string]string) {
 	if len(*dataDir) > 0 {
 		flagMap["data-dir"] = *dataDir
 	}
-	
+
+	if len(*cookie) > 0 {
+		tmp := fmt.Sprintf("%x", md5.Sum([]byte(*cookie)))
+		flagMap["client-cookie"] = tmp
+		flagMap["master-cookie"] = tmp
+		flagMap["slave-cookie"] = tmp
+	}
+
 	return flagMap
 }
 
@@ -117,15 +128,17 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "Options:")
 	
 	fmt.Fprintln(os.Stderr,
-		"    --conf-dir DIR     Find config files in <dir>")
+		"    --conf-dir DIR      Find config files in <dir>")
 	fmt.Fprintln(os.Stderr,
-		"    --local            Clusters only on local machine")
+		"    --local             Cluster only on local machine")
 	fmt.Fprintln(os.Stderr,
-		"    --log-level LEVEL  Define log level [error/slow/full]")
+		"    --log-level LEVEL   Define log level [error/slow/full]")
 	fmt.Fprintln(os.Stderr,
-		"    --data-dir DIR     Save meta data and log in {DIR}/master")
+		"    --data-dir DIR      Save meta data and log in {DIR}/master")
 	fmt.Fprintln(os.Stderr,
-		"    -h --help          Display usage")
+		"    --cookie COOKIE     Set cookie for connection safety")
+	fmt.Fprintln(os.Stderr,
+		"    -h --help           Display usage")
 }
 
 

@@ -16,44 +16,51 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package ssignal
+package masterctl
 
 import (
+	"net"
 	"os"
 	"fmt"
-	"os/signal"
-
-	"common"
-	"meta"
-	"slog"
+	
+	"config"
 )
 
-var sigChan = make(chan os.Signal, 1)
+type MasterStatus struct {
+	ip string
+	connected bool
+	
+}
+
+var (
+	tcpListener net.Listener
+
+	
+)
 
 func Init() {
-	sigChan = make(chan os.Signal, 1)
-	go sigHanderTask()
-	
-	signal.Notify(sigChan, os.Interrupt, os.Kill)
-}
-
-func sigHanderTask() {
-	select {
-	case sig := <-sigChan: 
-		slog.ExitLog = fmt.Sprintf("by signal %v", sig)
-	case s := <-common.ExitChan:
-		slog.ExitLog = "because " + s
+	var err error
+	tcpListener, err = net.Listen("tcp", ":" + config.ConfMap["master-port"])
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			"\nError:\nCan not listen :%v\n",
+			config.ConfMap["master-port"])
+		os.Exit(3)
 	}
 
-	meta.ToClose<- true
-	meta.ToClose<- true
+	// TODO unix socket
 
-	<-meta.GotIt
-	<-meta.GotIt
-
-	slog.ToClose<- true
-	<-slog.GotIt
-
-	os.Exit(0)
+	go task()
 }
+
+func task() {
+	for {
+		//conn, err := ln.Accept()
+		//if err != nil {
+			// handle error
+		//}
+		//go handleConnection(conn)
+	}
+}
+
 

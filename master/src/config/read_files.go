@@ -24,9 +24,14 @@ import (
 	"io/ioutil"
 	"net"
 	"fmt"
+	"strconv"
+	"crypto/md5"
 )
 
-var LocalIPs []string
+var (
+	LocalIPs []string
+	mastersFile string
+)
 
 func readMastersFile() {
 	host, err := os.Hostname()
@@ -41,8 +46,9 @@ func readMastersFile() {
 		fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
 		os.Exit(2)
 	}
-	
-	fl, err := os.Open(path.Join(ConfMap["conf-dir"] + "/masters"))
+
+	mastersFile = path.Join(ConfMap["conf-dir"] + "/masters")
+	fl, err := os.Open(mastersFile)
 	if err != nil {
 		return
 	}
@@ -88,6 +94,13 @@ func readMastersFile() {
 		}
 		i++
 	}
+
+	if LocalMaster == "" {
+		fmt.Fprintf(os.Stderr,
+			"\nError:\nNo local ip appointed in %v\n",
+			mastersFile)
+		os.Exit(3)
+	}
 }
 
 func insertIP(host string, lineNum int) {
@@ -95,18 +108,24 @@ func insertIP(host string, lineNum int) {
 	if err != nil || len(ips) == 0 {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\n%v line %d: %v\nCan not find ip from the hostname\n",
-			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
+			mastersFile, lineNum, host)
 		os.Exit(3)
 	} else if len(ips) > 1 {
 		fmt.Fprintln(os.Stderr,
 			"\nError:\n%v line %d: %v\nFind more than one ip from the hostname.\n",
-			path.Join(ConfMap["conf-dir"] + "/masters"), lineNum, host)
+			mastersFile, lineNum, host)
 		os.Exit(3)
 	}
 	
 	for _, v := range LocalIPs {
 		if ips[0] == v {
-			LocalIPs = []string {v}
+			if LocalMaster != "" {
+				fmt.Fprintf(os.Stderr,
+					"\nError:\nMore than one local ips in file %v\n",
+					mastersFile)
+				os.Exit(3)
+			}
+			LocalMaster = v
 			return
 		}
 	}
@@ -194,10 +213,15 @@ func updateConf(key, value string, lineNum int) {
 	}
 
 	for _, v := range BoolConfs {
-		if key == v && !(value == "on" || value == "off") {
-			fmt.Fprintln(os.Stderr,
-				"\nError:\nInvalid config, this must be 'on' or 'off':\n")
-			fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
+		if key == v {
+			if !(value == "on" || value == "off") {
+				fmt.Fprintln(os.Stderr,
+					"\nError:\nInvalid config, this must be 'on' or 'off':\n")
+				fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
+				os.Exit(3)
+			}
+			ConfMap[key] = value
+			return
 		}
 	}
 
@@ -213,8 +237,29 @@ func updateConf(key, value string, lineNum int) {
 			os.Exit(3)
 		}
 		}
+		ConfMap[key] = value
+		return
 	}
-			
-	ConfMap[key] = value
+
+	for _, v := range IntConfs {
+		if key == v {
+			_, err := strconv.Atoi(value)
+			if err != nil {
+				fmt.Fprintf(os.Stderr,
+					"\nError:\nInvalid config:\n%v %v\n",
+					key, value)
+				os.Exit(3)
+			}
+			ConfMap[key] = value
+			return
+		}
+	}
+
+	if key == "client-cookie" || key == "master-cookie" ||
+		key == "slave-cookie" {
+		ConfMap[key] = fmt.Sprintf("%x", md5.Sum([]byte(value)))
+		return
+	}
+
 }
 

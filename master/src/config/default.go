@@ -26,12 +26,27 @@ var BoolConfs = []string {
 	"delete-old-log",
 }
 
+var IntConfs = []string {
+	"client-port",
+	"master-port",
+	"slave-port",
+}
+
 func defaultConf() {
 	ConfMap["serialize"] = "on"
 	ConfMap["local"] = "off"
 	ConfMap["delete-old-log"] = "on"
+	
 	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
 	ConfMap["log-level"] = "error"
+
+	ConfMap["client-port"] = "4400"
+	ConfMap["master-port"] = "4401"
+	ConfMap["slave-port"]  = "4402"
+
+	ConfMap["client-cookie"] = ""
+	ConfMap["master-cookie"] = ""
+	ConfMap["slave-cookie"] = ""
 
 	// TODO
 }

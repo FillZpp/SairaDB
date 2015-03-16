@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+var ExitChan = make(chan string)
+
 func IsDirExist(dir string) bool {
 	flInfo, err := os.Stat(dir)
 
