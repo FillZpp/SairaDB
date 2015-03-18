@@ -16,39 +16,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package config
+package masterctl
 
-import "path"
+import (
+	//"net"
+)
 
-var BoolConfs = []string {
-	"serialize",
-	"local",
-	"delete-old-log",
-}
-
-var IntConfs = []string {
-	"client-port",
-	"master-port",
-	"slave-port",
-}
-
-func defaultConf() {
-	ConfMap["serialize"] = "on"
-	ConfMap["local"] = "off"
-	ConfMap["delete-old-log"] = "on"
+func sendTask(ip string, ch chan string) {
 	
-	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
-	ConfMap["log-level"] = "error"
-
-	ConfMap["client-port"] = "4400"
-	ConfMap["master-port"] = "4401"
-	ConfMap["slave-port"]  = "4402"
-
-	ConfMap["client-cookie"] = ""
-	ConfMap["master-cookie"] = ""
-	ConfMap["slave-cookie"] = ""
-
-	// TODO
-	// readDeadLine
 }
+
 

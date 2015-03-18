@@ -24,40 +24,74 @@ import (
 	"fmt"
 	
 	"config"
+	"slog"
 )
 
-type MasterStatus struct {
-	Ip string
-	Connected bool
+type MasterCtl struct {
+	Send chan string
+	Receive chan string
+}
+
+type AlterMaster struct {
+	Ch chan error
+	AlterType string
+	AlterCont string
 }
 
 var (
-	tcpListener net.Listener
-
-	
+	MasterMap = make(map[string]MasterCtl)
+	AlterChan = make(chan AlterMaster, 10)
 )
 
 func Init() {
-	var err error
-	tcpListener, err = net.Listen("tcp", ":" + config.ConfMap["master-port"])
+	listener, err := net.Listen("tcp", ":" + config.ConfMap["master-port"])
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nCan not listen :%v\n",
 			config.ConfMap["master-port"])
 		os.Exit(3)
 	}
-	// TODO unix socket
 
-	go task()
+	listenChans := make(map[string]chan net.Conn)
+	for _, ip := range config.MasterList {
+		mc := MasterCtl{ make(chan string), make(chan string) }
+		MasterMap[ip] = mc
+		ch := make(chan net.Conn, 1)
+		listenChans[ip] = ch
+		go sendTask(ip, mc.Send)
+		go receiveTask(ip, ch)
+	}
+
+	go listenTask(listener, listenChans)
 }
 
-func task() {
+func listenTask(listener net.Listener, listenChans map[string]chan net.Conn) {
 	for {
-		//conn, err := ln.Accept()
-		//if err != nil {
-			// handle error
-		//}
-		//go handleConnection(conn)
+		conn, err := listener.Accept()
+		if err != nil {
+			slog.LogChan<- "master controller accept error: " +
+				err.Error()
+			continue
+		}
+		
+		ip, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+		if err != nil {
+			slog.LogChan<- "master controller address split error: " +
+				err.Error()
+			conn.Close()
+			continue
+		}
+
+		ch, ok := listenChans[ip]
+		if !ok {
+			slog.LogChan<-
+				fmt.Sprintf("master controller get %v is not in masters",
+				ip)
+			conn.Close()
+			continue
+		}
+
+		ch<- conn
 	}
 }
 
