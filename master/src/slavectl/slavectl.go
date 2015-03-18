@@ -16,55 +16,45 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package masterctl
+package slavectl
 
 import (
 	"net"
+	"os"
 	"fmt"
-	"time"
-	
-	"common"
+
+	"config"
 	"slog"
 )
 
-func recvLog(ip, reason string) {
-	slog.LogChan<-
-		fmt.Sprintf("master controller receive task (%v): %v", ip, reason)
+var (
+	port string
+	cookie string
+)
+
+func Init() {
+	port, _ = config.ConfMap["slave-port"]
+	cookie, _ = config.ConfMap["slave-cookie"]
+	listener, err := net.Listen("tcp", ":" + port)
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			"\nError:\nSlave controller can not listen: %v\n", port)
+		os.Exit(3)
+	}
+
+	go listenTask(listener)
 }
 
-func receiveTask(ip string, ch chan net.Conn) {
-	var conn net.Conn
-	var err error
-	var msg string
-	buf := make([]byte, 1000)
+func listenTask(listener net.Listener) {
 	for {
-		if conn == nil {
-			conn = <-ch
-			msg, err = common.ConnRead(buf, conn, 100)
-			if err != nil {
-				recvLog(ip, err.Error())
-				conn.Close()
-				continue
-			}
-
-			if msg != cookie {
-				recvLog(ip, "wrong cookie")
-				common.ConnWrite("cookie wrong", conn, 100)
-				conn.Close()
-				continue
-			}
-
-			err = common.ConnWrite("ok", conn, 100)
-			if err != nil {
-				recvLog(ip, err.Error())
-				conn.Close()
-				continue
-			}
-			recvLog(ip, "receive connected")
-		}  // if conn == nil
-		time.Sleep(time.Hour)
-		// TODO
+		conn, err := listener.Accept()
+		if err != nil {
+			slog.LogChan<- "slave controller accept error: " +
+				err.Error()
+			continue
+		}
+		go slaveHandler(conn)
 	}
 }
-
-
+			
+	

@@ -33,7 +33,9 @@ import (
 	"meta"
 	"slog"
 	"ssignal"
+	
 	"masterctl"
+	"slavectl"
 )
 
 func main() {
@@ -47,6 +49,7 @@ func main() {
 	ssignal.Init()
 
 	masterctl.Init()
+	slavectl.Init()
 
 	test()
 }

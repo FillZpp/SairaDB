@@ -16,7 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package masterctl
+package slavectl
 
 import (
 	"net"
@@ -27,55 +27,43 @@ import (
 	"common"
 )
 
-func sendLog(ip, reason string) {
+func handlerLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("master controller send task (%v): %v", ip, reason)
+		fmt.Sprintf("slave controller handle (%v): %v", ip, reason)
 }
 
-func sendTask(ip string, ch chan string) {
-	var conn net.Conn
+func slaveHandler(conn net.Conn) {
+	defer conn.Close()
 	var err error
 	var msg string
-	addr := ip + ":" + port
+	var ip string
 	buf := make([]byte, 1000)
-	once := true
-	for {
-		if conn == nil {
-			conn, err = net.Dial("tcp", addr)
-			if err != nil {
-				if once {
-					sendLog(ip, err.Error())
-				}
-				once = false
-				time.Sleep(time.Second)
-				continue
-			}
-			once = true
-
-			err = common.ConnWrite(cookie, conn, 100)
-			if err != nil {
-				sendLog(ip, err.Error())
-				conn.Close()
-				continue
-			}
-
-			msg, err = common.ConnRead(buf, conn, 100)
-			if err != nil {
-				sendLog(ip, err.Error())
-				conn.Close()
-				continue
-			}
-
-			if msg != "ok" {
-				sendLog(ip, "wrong cookie")
-				conn.Close()
-				continue
-			}
-			sendLog(ip, "send connected")
-		}  // if conn == nil
-		time.Sleep(time.Hour)
-		// TODO
+	ip, _, err = net.SplitHostPort(conn.RemoteAddr().String())
+	if err != nil {
+		slog.LogChan<- "slave controller address split error: " + err.Error()
+		return
 	}
+
+	msg, err = common.ConnRead(buf, conn, 100)
+	if err != nil {
+		handlerLog(ip, err.Error())
+		return
+	}
+	
+	if msg != cookie {
+		handlerLog(ip, "wrong cookie")
+		common.ConnWrite("wrong cookie", conn, 100)
+		return
+	}
+		
+	err = common.ConnWrite("ok", conn, 100)
+	if err != nil {
+		handlerLog(ip, err.Error())
+		return
+	}
+	handlerLog(ip, "connected")
+
+	time.Sleep(time.Hour)
 }
 
 
