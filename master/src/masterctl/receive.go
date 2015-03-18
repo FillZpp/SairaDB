@@ -20,8 +20,50 @@ package masterctl
 
 import (
 	"net"
+	"fmt"
+	
+	"common"
+	"slog"
 )
 
-func receiveTask(ip string, ch chan net.Conn) {
-	
+func recvError(ip, reason string) {
+	slog.LogChan<-
+		fmt.Sprintf("master controller receive task (%v) error: %v",
+		ip, reason)
 }
+
+func receiveTask(ip string, ch chan net.Conn) {
+	var conn net.Conn
+	var err error
+	var msg string
+	buf := make([]byte, 1000)
+	for {
+		if conn == nil {
+			conn = <-ch
+			msg, err = common.ConnRead(buf, conn, 100)
+			if err != nil {
+				recvError(ip, err.Error())
+				conn.Close()
+				continue
+			}
+
+			if msg != cookie {
+				recvError(ip, "wrong cookie")
+				common.ConnWrite("cookie wrong", conn, 20)
+				conn.Close()
+				continue
+			}
+
+			err = common.ConnWrite("ok", conn, 100)
+			if err != nil {
+				recvError(ip, err.Error())
+				conn.Close()
+				continue
+			}
+		}  // if conn == nil
+		
+		// TODO
+	}
+}
+
+

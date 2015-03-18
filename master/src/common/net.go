@@ -16,44 +16,40 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package config
+package common
 
 import (
-	"path"
-	"crypto/md5"
-	"fmt"
+	"net"
+	"time"
 )
 
-var BoolConfs = []string {
-	"serialize",
-	"local",
-	"delete-old-log",
+func ConnRead(buf []byte, conn net.Conn, timeout int) (ret string, err error) {
+	var n int
+	for {
+		if timeout > 0 {
+			conn.SetReadDeadline(time.Now().
+				Add(time.Duration(timeout) * time.Millisecond))
+		}
+		n, err = conn.Read(buf)
+		if err != nil {
+			return
+		}
+		
+		ret += string(buf[:n])
+		if n < len(buf) {
+			break
+		}
+	}
+	return
 }
 
-var IntConfs = []string {
-	"client-port",
-	"master-port",
-	"slave-port",
+func ConnWrite(s string, conn net.Conn, timeout int) (err error) {
+	if timeout > 0 {
+		conn.SetWriteDeadline(time.Now().
+			Add(time.Duration(timeout) * time.Millisecond))
+	}
+	_, err = conn.Write([]byte(s))
+	return
 }
 
-func defaultConf() {
-	ConfMap["serialize"] = "on"
-	ConfMap["local"] = "off"
-	ConfMap["delete-old-log"] = "on"
-	
-	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
-	ConfMap["log-level"] = "error"
-
-	ConfMap["client-port"] = "4400"
-	ConfMap["master-port"] = "4401"
-	ConfMap["slave-port"]  = "4402"
-
-	ckMd5 := fmt.Sprintf("%x", md5.Sum([]byte("")))
-	ConfMap["client-cookie"] = ckMd5
-	ConfMap["master-cookie"] = ckMd5
-	ConfMap["slave-cookie"] = ckMd5
-
-	// TODO
-	// readDeadLine
-}
 

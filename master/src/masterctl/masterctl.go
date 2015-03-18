@@ -39,12 +39,16 @@ type AlterMaster struct {
 }
 
 var (
+	port string
+	cookie string
 	MasterMap = make(map[string]MasterCtl)
 	AlterChan = make(chan AlterMaster, 10)
 )
 
 func Init() {
-	listener, err := net.Listen("tcp", ":" + config.ConfMap["master-port"])
+	port, _ = config.ConfMap["master-port"]
+	cookie, _ = config.ConfMap["master-cookie"]
+	listener, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nCan not listen :%v\n",

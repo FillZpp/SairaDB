@@ -114,10 +114,10 @@ func handleFlag() (flagMap map[string]string) {
 	}
 
 	if len(*cookie) > 0 {
-		tmp := fmt.Sprintf("%x", md5.Sum([]byte(*cookie)))
-		flagMap["client-cookie"] = tmp
-		flagMap["master-cookie"] = tmp
-		flagMap["slave-cookie"] = tmp
+		ckMd5 := fmt.Sprintf("%x", md5.Sum([]byte(*cookie)))
+		flagMap["client-cookie"] = ckMd5
+		flagMap["master-cookie"] = ckMd5
+		flagMap["slave-cookie"] = ckMd5
 	}
 
 	return flagMap
