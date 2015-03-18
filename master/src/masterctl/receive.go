@@ -21,14 +21,15 @@ package masterctl
 import (
 	"net"
 	"fmt"
+	"time"
 	
 	"common"
 	"slog"
 )
 
-func recvError(ip, reason string) {
+func recvLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("master controller receive task (%v) error: %v",
+		fmt.Sprintf("master controller receive task (%v): %v",
 		ip, reason)
 }
 
@@ -42,13 +43,13 @@ func receiveTask(ip string, ch chan net.Conn) {
 			conn = <-ch
 			msg, err = common.ConnRead(buf, conn, 100)
 			if err != nil {
-				recvError(ip, err.Error())
+				recvLog(ip, err.Error())
 				conn.Close()
 				continue
 			}
 
 			if msg != cookie {
-				recvError(ip, "wrong cookie")
+				recvLog(ip, "wrong cookie")
 				common.ConnWrite("cookie wrong", conn, 20)
 				conn.Close()
 				continue
@@ -56,12 +57,13 @@ func receiveTask(ip string, ch chan net.Conn) {
 
 			err = common.ConnWrite("ok", conn, 100)
 			if err != nil {
-				recvError(ip, err.Error())
+				recvLog(ip, err.Error())
 				conn.Close()
 				continue
 			}
+			recvLog(ip, "receive connected")
 		}  // if conn == nil
-		
+		time.Sleep(time.Hour)
 		// TODO
 	}
 }

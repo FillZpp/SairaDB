@@ -27,9 +27,9 @@ import (
 	"common"
 )
 
-func sendError(ip, reason string) {
+func sendLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("master controller send task (%v) error: %v",
+		fmt.Sprintf("master controller send task (%v): %v",
 		ip, reason)
 }
 
@@ -39,36 +39,42 @@ func sendTask(ip string, ch chan string) {
 	var msg string
 	addr := ip + ":" + port
 	buf := make([]byte, 1000)
+	once := true
 	for {
 		if conn == nil {
 			conn, err = net.Dial("tcp", addr)
 			if err != nil {
-				sendError(ip, err.Error())
+				if once {
+					sendLog(ip, err.Error())
+				}
+				once = false
 				time.Sleep(time.Second)
 				continue
 			}
+			once = true
 
 			err = common.ConnWrite(cookie, conn, 100)
 			if err != nil {
-				sendError(ip, err.Error())
+				sendLog(ip, err.Error())
 				conn.Close()
 				continue
 			}
 
 			msg, err = common.ConnRead(buf, conn, 100)
 			if err != nil {
-				sendError(ip, err.Error())
+				sendLog(ip, err.Error())
 				conn.Close()
 				continue
 			}
 
 			if msg != "ok" {
-				sendError(ip, "cookie verify wrong")
+				sendLog(ip, "wrong cookie")
 				conn.Close()
 				continue
 			}
+			sendLog(ip, "send connected")
 		}  // if conn == nil
-
+		time.Sleep(time.Hour)
 		// TODO
 	}
 }

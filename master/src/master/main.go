@@ -25,6 +25,7 @@ import (
 	"path"
 	"sync/atomic"
 	"crypto/md5"
+	"time"
 
 	"common"
 	"config"
@@ -58,6 +59,7 @@ func test() {
 	fmt.Println(config.MasterList)
 	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
+	time.Sleep(time.Millisecond)
 }
 
 func handleFlag() (flagMap map[string]string) {

@@ -90,6 +90,9 @@ func readMastersFile() {
 			}
 		}
 		if i == len {
+			if step == 1 {
+				insertIP(string(con[prev:i]), lineNum)
+			}
 			break
 		}
 		i++
@@ -196,6 +199,9 @@ func readConfFile(confDir string) {
 			}
 		}
 		if i == len {
+			if step == 3 {
+				updateConf(key, string(con[prev:i]), lineNum)
+			}
 			break
 		}
 		i++

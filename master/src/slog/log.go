@@ -31,7 +31,7 @@ import (
 
 var (
 	logDir string
-	LogChan chan string
+	LogChan = make(chan string)
 	
 	logFile *os.File
 	fileSize int

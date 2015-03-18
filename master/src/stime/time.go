@@ -93,11 +93,12 @@ func task() {
 		tm.Hour, tm.Minute, tm.Second }
 	fiveList := list.New()
 	fifList := list.New()
+	var u uint64 = 0
 	for i := 0; i < 5; i ++ {
-		fiveList.PushFront(0)
+		fiveList.PushFront(u)
 	}
 	for i := 0; i < 10; i ++ {
-		fifList.PushFront(0)
+		fifList.PushFront(u)
 	}
 	for {
 		time.Sleep(time.Millisecond * 20)
