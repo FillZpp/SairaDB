@@ -128,7 +128,7 @@ func alterDBTask() {
 			select {
 			case <-ToClose:
 				dbFile.Close()
-				GotIt<- true
+				GetEnd<- true
 				for {
 					ad = <-DBChan
 					ad.Ch<- errors.New("This master is to close.")

@@ -28,26 +28,39 @@ import (
 )
 
 type MasterCtl struct {
-	Send chan string
-	Receive chan string
+	MasterID int32
+	MasterIP string
+	SendChan chan SendMessage
+	RecvChan chan RecvRegister
+	Status int32
 }
 
-type AlterMaster struct {
-	Ch chan error
-	AlterType string
-	AlterCont string
+type SendMessage struct {
+	message []string
+	ch chan error
+}
+
+type RecvRegister struct {
+	ID string
+	Ret chan []string
 }
 
 var (
 	port string
 	cookie string
-	MasterMap = make(map[string]MasterCtl)
-	AlterChan = make(chan AlterMaster, 10)
+	MasterMap = make(map[string]*MasterCtl)
+	MasterList []*MasterCtl
+
+	term uint64 = 0
+	leader int32 = -1
+	voteFor int32 = -1
 )
 
 func Init() {
 	port, _ = config.ConfMap["master-port"]
 	cookie, _ = config.ConfMap["master-cookie"]
+	MasterList = make([]*MasterCtl, 1, len(config.MasterList) - 1)
+	
 	listener, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
@@ -56,16 +69,24 @@ func Init() {
 	}
 
 	listenChans := make(map[string]chan net.Conn)
-	for _, ip := range config.MasterList {
-		mc := MasterCtl{ make(chan string), make(chan string) }
-		MasterMap[ip] = mc
+	for idx, ip := range config.MasterList[1:] {
+		mc := MasterCtl{
+			int32(idx),
+			ip,
+			make(chan SendMessage, 100),
+			make(chan RecvRegister, 100),
+			0,
+		}
+		MasterMap[ip] = &mc
+		MasterList = append(MasterList, &mc)
 		ch := make(chan net.Conn, 1)
 		listenChans[ip] = ch
-		go sendTask(ip, mc.Send)
-		go receiveTask(ip, ch)
+		go sendTask(idx, ip, mc.SendChan)
+		go receiveTask(idx, ip, ch, mc.RecvChan)
 	}
 
 	go listenTask(listener, listenChans)
+	go findLeader()
 }
 
 func listenTask(listener net.Listener, listenChans map[string]chan net.Conn) {
@@ -78,7 +99,7 @@ func listenTask(listener net.Listener, listenChans map[string]chan net.Conn) {
 		}
 		
 		ip, _, err := net.SplitHostPort(conn.RemoteAddr().String())
-		if err != nil {
+ 		if err != nil {
 			slog.LogChan<- "master controller address split error: " +
 				err.Error()
 			conn.Close()

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"sync/atomic"
 
 	"common"
 	"config"
@@ -37,13 +36,13 @@ var (
 	fileSize int
 
 	ToClose = make(chan bool)
-	GotIt = make(chan bool)
+	GetEnd = make(chan bool)
 	ExitLog string
 )
 
 func Init() {
 	logDir = path.Join(config.ConfMap["data-dir"],
-		"master/log/" + (*stime.Time)(stime.Tm).Cat())
+		"master/log/" + stime.TimeCat())
 
 	if !common.IsDirExist(logDir) {
 		err := os.MkdirAll(logDir, 0700)
@@ -61,7 +60,7 @@ func Init() {
 
 func newLogFile(b bool) {
 	fname := path.Join(logDir,
-		"/" + (*stime.Time)(stime.Tm).Cat() + ".log")
+		"/" + stime.TimeCat() + ".log")
 	lf, err := os.OpenFile(fname, os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		if b {
@@ -89,18 +88,16 @@ func task() {
 		if size == 0 {
 			select {
 			case <-ToClose:
-				logFile.WriteString((*stime.Time)(
-					atomic.LoadPointer(&(stime.Tm))).Format() +
+				logFile.WriteString(stime.TimeFormat() + 
 					" This master closed " + ExitLog + ".\n")
 				logFile.Close()
-				GotIt<- true
+				GetEnd<- true
 				for {
 					<-LogChan
 				}
 			case newLog = <-LogChan:
 			}
-			cache = (*stime.Time)(stime.Tm).Format() +
-				" " + newLog + "\n"
+			cache = stime.TimeFormat() + " " + newLog + "\n"
 			size++
 		} else {
 			if size < 100 {
@@ -108,7 +105,7 @@ func task() {
 				go common.SetTimeout(ch, 100)
 				select {
 				case newLog = <-LogChan:
-					cache = (*stime.Time)(atomic.LoadPointer(&(stime.Tm))).Format() +
+					cache = stime.TimeFormat() +
 						" " + newLog + "\n"
 					size++
 					continue

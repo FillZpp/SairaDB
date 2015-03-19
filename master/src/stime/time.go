@@ -36,6 +36,24 @@ type Time struct {
 	Second int32
 }
 
+type idGeneration struct {
+	unixTime int64
+	n int64
+}
+
+var (
+	Tm unsafe.Pointer
+	UnixTime int64
+	
+	curID unsafe.Pointer
+
+	CurQueryNum uint64 = 0
+	QNOne     uint64 = 0
+	QNFive    uint64 = 0
+	QNFifteen uint64 = 0
+	SC uint64 = 0
+)
+
 func fc(i int) string {
 	if i < 10 {
 		return fmt.Sprintf("0%v", i)
@@ -50,37 +68,33 @@ func fc32(i int32) string {
 	return fmt.Sprintf("%v", i)
 }
 
-func (tm *Time) Format() string {
+func TimeFormat() string {
+	tm := (*Time)(atomic.LoadPointer(&Tm))
 	return fmt.Sprintf("%v-%v-%v %v:%v:%v",
 		tm.Year, fc(tm.Month), fc(tm.Day),
 		fc(tm.Hour), fc(tm.Minute), fc32(tm.Second))
 }
 
-func (tm *Time) Cat() string {
+func TimeCat() string {
+	tm := (*Time)(atomic.LoadPointer(&Tm))
 	return fmt.Sprintf("%v-%v-%v_%v-%v-%v",
 		tm.Year, fc(tm.Month), fc(tm.Day),
 		fc(tm.Hour), fc(tm.Minute), fc32(tm.Second))
 }
 
-var (
-	UnixTime int64
-	Tm unsafe.Pointer
-
-	CurQueryNum uint64 = 0
-
-	QNOne     uint64 = 0
-	QNFive    uint64 = 0
-	QNFifteen uint64 = 0
-
-	SC uint64 = 0
-)
+func GetID() string {
+	ig := (*idGeneration)(atomic.LoadPointer(&curID))
+	return fmt.Sprintf("%v%4x", ig.unixTime, atomic.AddInt64(&(ig.n), 1))
+}
 
 func Init() {
 	ot := time.Now()
 	Tm = unsafe.Pointer(&Time{
 		ot.Year(), int(ot.Month()), ot.Day(),
 		ot.Hour(), ot.Minute(), int32(ot.Second())})
-	UnixTime = ot.UnixNano()
+	ut := ot.UnixNano()
+	UnixTime = ut
+	atomic.StorePointer(&curID, unsafe.Pointer(&idGeneration{ ut, 0 }))
 	go task()
 }
 
@@ -91,6 +105,7 @@ func task() {
 	tm := (*Time)(Tm)
 	nt := Time{ tm.Year, tm.Month, tm.Day,
 		tm.Hour, tm.Minute, tm.Second }
+	
 	fiveList := list.New()
 	fifList := list.New()
 	var u uint64 = 0
@@ -100,11 +115,14 @@ func task() {
 	for i := 0; i < 10; i ++ {
 		fifList.PushFront(u)
 	}
+	
 	for {
 		time.Sleep(time.Millisecond * 20)
 		ot = time.Now()
 
-		atomic.SwapInt64(&UnixTime, ot.UnixNano())
+		ut := ot.UnixNano()
+		atomic.SwapInt64(&UnixTime, ut)
+		atomic.StorePointer(&curID, unsafe.Pointer(&idGeneration{ ut, 0 }))
 
 		j = int32(ot.Second())
 		if (*Time)(Tm).Second == j {

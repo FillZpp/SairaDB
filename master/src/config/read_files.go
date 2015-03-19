@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	LocalIPs []string
+	localIPs []string
 	mastersFile string
 )
 
@@ -41,8 +41,8 @@ func readMastersFile() {
 		os.Exit(3)
 	}
 	
-	LocalIPs, err = net.LookupHost(host)
-	if err != nil || len(LocalIPs) == 0 {
+	localIPs, err = net.LookupHost(host)
+	if err != nil || len(localIPs) == 0 {
 		fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
 		os.Exit(2)
 	}
@@ -98,7 +98,7 @@ func readMastersFile() {
 		i++
 	}
 
-	if LocalMaster == "" {
+	if MasterList[0] == "" {
 		fmt.Fprintf(os.Stderr,
 			"\nError:\nNo local ip appointed in %v\n",
 			mastersFile)
@@ -120,28 +120,21 @@ func insertIP(host string, lineNum int) {
 		os.Exit(3)
 	}
 	
-	for _, v := range LocalIPs {
+	for _, v := range localIPs {
 		if ips[0] == v {
-			if LocalMaster != "" {
+			if MasterList[0] != "" {
 				fmt.Fprintf(os.Stderr,
 					"\nError:\nMore than one local ips in file %v\n",
 					mastersFile)
 				os.Exit(3)
 			}
-			LocalMaster = v
+			MasterList[0] = v
 			return
 		}
 	}
 
-	for i, v := range MasterList {
+	for _, v := range MasterList {
 		if ips[0] == v {
-			return
-		} else if ips[0] < v {
-			MasterList = append(MasterList, "")
-			for j := len(MasterList) - 1; j > i; j-- {
-				MasterList[j] = MasterList[j-1]
-			}
-			MasterList[i] = ips[0]
 			return
 		}
 	}

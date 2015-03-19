@@ -36,7 +36,7 @@ var (
 	Users unsafe.Pointer      // map[string]User
 
 	ToClose = make(chan bool, 2)
-	GotIt = make(chan bool)
+	GetEnd = make(chan bool)
 )
 
 func Init() {

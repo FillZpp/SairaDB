@@ -22,6 +22,7 @@ import (
 	"net"
 	"fmt"
 	"time"
+	"sync/atomic"
 	
 	"common"
 	"slog"
@@ -32,14 +33,15 @@ func recvLog(ip, reason string) {
 		fmt.Sprintf("master controller receive task (%v): %v", ip, reason)
 }
 
-func receiveTask(ip string, ch chan net.Conn) {
+func receiveTask(idx int, ip string, connChan chan net.Conn,
+	rsgChan chan RecvRegister) {
 	var conn net.Conn
 	var err error
 	var msg string
 	buf := make([]byte, 1000)
 	for {
 		if conn == nil {
-			conn = <-ch
+			conn = <-connChan
 			msg, err = common.ConnRead(buf, conn, 100)
 			if err != nil {
 				recvLog(ip, err.Error())
@@ -60,10 +62,11 @@ func receiveTask(ip string, ch chan net.Conn) {
 				conn.Close()
 				continue
 			}
+			atomic.AddInt32(&(MasterList[idx].Status), 1)
 			recvLog(ip, "receive connected")
 		}  // if conn == nil
-		time.Sleep(time.Hour)
-		// TODO
+		
+		
 	}
 }
 

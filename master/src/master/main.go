@@ -40,8 +40,7 @@ import (
 
 func main() {
 	config.GetHomePath()
-	flagMap := handleFlag()
-	config.Init(flagMap)
+	config.Init(handleFlag())
 
 	stime.Init()
 	meta.Init()
@@ -58,11 +57,11 @@ func test() {
 	for k, v := range config.ConfMap {
 		fmt.Println(k, v)
 	}
-	fmt.Printf("\n%v\n", config.LocalMaster)
+	fmt.Println()
 	fmt.Println(config.MasterList)
 	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
-	time.Sleep(time.Millisecond)
+	time.Sleep(time.Hour)
 }
 
 func handleFlag() (flagMap map[string]string) {

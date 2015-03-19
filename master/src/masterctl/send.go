@@ -22,6 +22,7 @@ import (
 	"net"
 	"fmt"
 	"time"
+	"sync/atomic"
 
 	"slog"
 	"common"
@@ -32,7 +33,7 @@ func sendLog(ip, reason string) {
 		fmt.Sprintf("master controller send task (%v): %v", ip, reason)
 }
 
-func sendTask(ip string, ch chan string) {
+func sendTask(idx int, ip string, ch chan SendMessage) {
 	var conn net.Conn
 	var err error
 	var msg string
@@ -71,10 +72,12 @@ func sendTask(ip string, ch chan string) {
 				conn.Close()
 				continue
 			}
+			atomic.AddInt32(&(MasterList[idx].Status), 1)
 			sendLog(ip, "send connected")
 		}  // if conn == nil
-		time.Sleep(time.Hour)
-		// TODO
+		
+		
+		
 	}
 }
 

@@ -133,7 +133,7 @@ func alterUserTask() {
 			select {
 			case <-ToClose:
 				userFile.Close()
-				GotIt<- true
+				GetEnd<- true
 				for {
 					au := <-UserChan
 					au.Ch<- errors.New("This master is to close.")
