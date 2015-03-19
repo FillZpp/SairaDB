@@ -36,8 +36,8 @@ type MasterCtl struct {
 }
 
 type SendMessage struct {
-	message []string
-	ch chan error
+	Message []string
+	Ch chan error
 }
 
 type RecvRegister struct {
@@ -54,6 +54,7 @@ var (
 	term uint64 = 0
 	leader int32 = -1
 	voteFor int32 = -1
+	followerNum int32 = 0
 )
 
 func Init() {
