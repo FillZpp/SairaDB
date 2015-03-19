@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"time"
 	"sync/atomic"
+	"encoding/json"
 
 	"slog"
 	"common"
@@ -76,8 +77,13 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 			sendLog(ip, "send connected")
 		}  // if conn == nil
 		
-		
-		
+		sm := <-ch
+		b, err = json.Marshal(sm.Message)
+		if err != nil {
+			sm.Ch<- err
+			continue
+		}
+		err = common.ConnWrite(b)
 	}
 }
 
