@@ -38,8 +38,9 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 	var conn net.Conn
 	var err error
 	var msg string
+	var b []byte
 	addr := ip + ":" + port
-	buf := make([]byte, 1000)
+	buf := make([]byte, 10)
 	once := true
 	for {
 		if conn == nil {
@@ -54,27 +55,50 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 			}
 			once = true
 
-			err = common.ConnWrite(cookie, conn, 100)
+			err = common.ConnWriteString(cookie, conn, 500)
 			if err != nil {
 				sendLog(ip, err.Error())
 				conn.Close()
+				conn = nil
 				continue
 			}
 
-			msg, err = common.ConnRead(buf, conn, 100)
+			msg, err = common.ConnRead(buf, conn, 500)
 			if err != nil {
 				sendLog(ip, err.Error())
 				conn.Close()
+				conn = nil
 				continue
 			}
 
 			if msg != "ok" {
 				sendLog(ip, "wrong cookie")
 				conn.Close()
+				conn = nil
 				continue
 			}
 			atomic.AddInt32(&(MasterList[idx].Status), 1)
 			sendLog(ip, "send connected")
+
+			if atomic.LoadInt32(&leader) == 0 {
+				b, _ = json.Marshal([]string{"",
+					"leader", fmt.Sprintf("%v", term)})
+				err = common.ConnWrite(b, conn, 500)
+				if err != nil {
+					sendLog(ip, err.Error())
+					conn.Close()
+					conn = nil
+					continue
+				}
+
+				_, err = common.ConnRead(buf, conn, 500)
+				if err != nil {
+					sendLog(ip, err.Error())
+					conn.Close()
+					conn = nil
+					continue
+				}
+			}
 		}  // if conn == nil
 		
 		sm := <-ch
@@ -83,7 +107,22 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 			sm.Ch<- err
 			continue
 		}
-		err = common.ConnWrite(b)
+		err = common.ConnWrite(b, conn, 500)
+		if err != nil {
+			sm.Ch<- err
+			sendLog(ip, err.Error())
+			conn.Close()
+			conn = nil
+			continue
+		}
+		sm.Ch<- nil
+		_, err = common.ConnRead(buf, conn, 500)
+		if err != nil {
+			sendLog(ip, err.Error())
+			conn.Close()
+			conn = nil
+			continue
+		}
 	}
 }
 

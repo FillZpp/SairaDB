@@ -67,6 +67,7 @@ func initDatabase() {
 		os.Exit(3)
 	}
 
+	var meta []string
 	var databases map[string]Database
 	bt := make([]byte, 10)
 	n, err := dbFile.Read(bt)
@@ -78,14 +79,22 @@ func initDatabase() {
 			dbFile.Read(bt)
 			strs[1] += string(bt)
 		}
-		buf := bytes.NewBufferString(strs[1])
 		
-		dec := gob.NewDecoder(buf)
-		_ = dec.Decode(&databases)
+		metaBuf := bytes.NewBufferString(strs[1])
+		metaDec := gob.NewDecoder(metaBuf)
+		_ = metaDec.Decode(&meta)
+
+		term, _ := strconv.Atoi(meta[0])
+		Term = int32(term)
+
+		dbBuf := bytes.NewBufferString(meta[1])
+		dbDec := gob.NewDecoder(dbBuf)
+		_ = dbDec.Decode(&databases)
 	}
 	
 	if databases == nil {
 		databases = make(map[string]Database)
+		Term = 0
 	}
 
 	_, ok := databases["default"]
@@ -103,16 +112,25 @@ func initDatabase() {
 			},
 		}
 	}
-
+	
 	Databases = unsafe.Pointer(&databases)
 	go alterDBTask()
 }
 
 func syncDBFile() {
-	buf := new(bytes.Buffer)
-	enc := gob.NewEncoder(buf)
-	enc.Encode((*map[string]Database)(atomic.LoadPointer(&Databases)))
-	s := buf.String()
+	dbBuf := new(bytes.Buffer)
+	dbEnc := gob.NewEncoder(dbBuf)
+	dbEnc.Encode((*map[string]Database)(atomic.LoadPointer(&Databases)))
+	dbStr := dbBuf.String()
+
+	metaBuf := new(bytes.Buffer)
+	metaEnc := gob.NewEncoder(metaBuf)
+	metaEnc.Encode([]string{
+		strconv.Itoa(int(atomic.LoadInt32(&Term))),
+		dbStr,
+	})
+	
+	s := metaBuf.String()
 	s = strconv.Itoa(len(s)) + ";" + s
 	
 	dbFile.Seek(0, 0)
@@ -121,7 +139,7 @@ func syncDBFile() {
 
 func alterDBTask() {
 	syncDBFile()
-	var tmp map[string]Database
+	var tmp *map[string]Database
 	var ad AlterDB
 	for {
 		if tmp == nil {
@@ -135,27 +153,24 @@ func alterDBTask() {
 				}
 			case ad = <-DBChan:
 			}
-			if ad.AlterType == "add_column" ||
-				ad.AlterType == "add_table" ||
-				ad.AlterType == "add_db" {
-				handleDBAlter((*map[string]Database)(Databases), ad)
-			} else {
-				common.DeepCopy((*map[string]Database)(Databases),
-					&tmp)
-				if !handleDBAlter(&tmp, ad) {
-					tmp = nil
-				}
+			var copy map[string]Database
+			common.DeepCopy((*map[string]Database)(Databases), &copy)
+			tmp = &copy
+			if !handleDBAlter(tmp, ad) {
+				tmp = nil
 			}
 		} else {
 			ch := make(chan bool)
 			go common.SetTimeout(ch, 10)
 			select {
 			case ad = <-DBChan:
-				handleDBAlter(&tmp, ad)
+				handleDBAlter(tmp, ad)
 				continue
 			case <-ch:
 			}
-			atomic.StorePointer(&Databases, unsafe.Pointer(&tmp))
+
+			atomic.StorePointer(&Databases, unsafe.Pointer(tmp))
+			atomic.AddInt32(&Term, 1)
 			tmp = nil
 			syncDBFile()
 		}
@@ -170,8 +185,7 @@ func handleDBAlter(dbs *map[string]Database, ad AlterDB) bool {
 			ad.Ch<- errors.New("The database already exists.")
 			return false
 		}
-		(*dbs)[ad.AlterCont[0]] = Database{ ad.AlterCont[1], nil }
-
+		(*dbs)[ad.AlterCont[0]] = Database{ ad.AlterCont[0], nil }
 		// TODO
 		
 	default:

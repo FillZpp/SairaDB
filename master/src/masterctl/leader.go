@@ -59,7 +59,7 @@ func findLeader() {
 
 			errCh := make(chan error)
 			resCh := make(chan []string, 1)
-			m.SendChan<- SendMessage{ v, errCh }
+			m.SendChan<- SendMessage{ v, 1, errCh }
 			err := <-errCh
 			if err != nil {
 				continue
@@ -98,7 +98,7 @@ func findLeader() {
 
 				errCh := make(chan error)
 				resCh := make(chan []string, 1)
-				m.SendChan<- SendMessage{ msg, make(chan error) }
+				m.SendChan<- SendMessage{ msg, 1, errCh }
 				err := <-errCh
 				if err != nil {
 					continue

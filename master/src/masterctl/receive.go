@@ -41,24 +41,27 @@ func receiveTask(idx int, ip string, connChan chan net.Conn,
 	for {
 		if conn == nil {
 			conn = <-connChan
-			msg, err = common.ConnRead(buf, conn, 100)
+			msg, err = common.ConnRead(buf, conn, 500)
 			if err != nil {
 				recvLog(ip, err.Error())
 				conn.Close()
+				conn = nil
 				continue
 			}
 
 			if msg != cookie {
 				recvLog(ip, "wrong cookie")
-				common.ConnWrite("cookie wrong", conn, 100)
+				common.ConnWriteString("cookie wrong", conn, 500)
 				conn.Close()
+				conn = nil
 				continue
 			}
 
-			err = common.ConnWrite("ok", conn, 100)
+			err = common.ConnWriteString("ok", conn, 500)
 			if err != nil {
 				recvLog(ip, err.Error())
 				conn.Close()
+				conn = nil
 				continue
 			}
 			atomic.AddInt32(&(MasterList[idx].Status), 1)

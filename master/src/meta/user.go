@@ -78,6 +78,7 @@ func initUser() {
 		os.Exit(3)
 	}
 
+	var meta []string
 	var users map[string]User
 	bt := make([]byte, 10)
 	n, err := userFile.Read(bt)
@@ -89,9 +90,19 @@ func initUser() {
 			userFile.Read(bt)
 			strs[1] += string(bt)
 		}
-		buf := bytes.NewBufferString(strs[1])
-		dec := gob.NewDecoder(buf)
-		_ = dec.Decode(&users)
+		
+		metaBuf := bytes.NewBufferString(strs[1])
+		metaDec := gob.NewDecoder(metaBuf)
+		_ = metaDec.Decode(&meta)
+
+		term, _ := strconv.Atoi(meta[0])
+		if int32(term) > Term {
+			Term = int32(term)
+		}
+
+		userBuf := bytes.NewBufferString(meta[1])
+		userDec := gob.NewDecoder(userBuf)
+		_ = userDec.Decode(&users)
 	}
 	
 	if users == nil {
@@ -114,10 +125,19 @@ func initUser() {
 }
 
 func syncUserFile() {
-	buf := new(bytes.Buffer)
-	enc := gob.NewEncoder(buf)
-	enc.Encode((*map[string]User)(Users))
-	s := buf.String()
+	userBuf := new(bytes.Buffer)
+	userEnc := gob.NewEncoder(userBuf)
+	userEnc.Encode((*map[string]User)(Users))
+	userStr := userBuf.String()
+
+	metaBuf := new(bytes.Buffer)
+	metaEnc := gob.NewEncoder(metaBuf)
+	metaEnc.Encode([]string{
+		strconv.Itoa(int(atomic.LoadInt32(&Term))),
+		userStr,
+	})
+
+	s := metaBuf.String()
 	s = strconv.Itoa(len(s)) + ";" + s
 
 	userFile.Seek(0, 0)
@@ -126,7 +146,7 @@ func syncUserFile() {
 
 func alterUserTask() {
 	syncUserFile()
-	var tmp map[string]User
+	var tmp *map[string]User
 	var au AlterUser
 	for {
 		if tmp == nil {
@@ -140,24 +160,24 @@ func alterUserTask() {
 				}
 			case au = <-UserChan:
 			}
-			if au.AlterType == "add_user" {
-				handleUserAlter((*map[string]User)(Users), au)
-			} else {
-				common.DeepCopy((*map[string]User)(Users), &tmp)
-				if !handleUserAlter(&tmp, au) {
-					tmp = nil
-				}
+			var copy map[string]User
+			common.DeepCopy((*map[string]User)(Users), &copy)
+			tmp = &copy
+			if !handleUserAlter(tmp, au) {
+				tmp = nil
 			}
 		} else {
 			ch := make(chan bool)
 			go common.SetTimeout(ch, 10)
 			select {
 			case au = <- UserChan:
-				handleUserAlter(&tmp, au)
+				handleUserAlter(tmp, au)
 				continue
 			case <-ch:
 			}
-			atomic.StorePointer(&Databases, unsafe.Pointer(&tmp))
+			
+			atomic.StorePointer(&Users, unsafe.Pointer(tmp))
+			atomic.AddInt32(&Term, 1)
 			tmp = nil
 			syncUserFile()
 		}
@@ -173,8 +193,8 @@ func handleUserAlter(users *map[string]User, au AlterUser) bool {
 			return false
 		}
 		(*users)[au.AlterCont[0]] = User{
+			au.AlterCont[0],
 			au.AlterCont[1],
-			au.AlterCont[2],
 			0,
 			make(map[string]uint),
 			make(map[string]uint),

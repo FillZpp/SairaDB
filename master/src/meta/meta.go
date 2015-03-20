@@ -31,8 +31,9 @@ import (
 
 var (
 	metaDir string
-	
-	Databases unsafe.Pointer  // map[string]NameSpace
+
+	Term int32
+	Databases unsafe.Pointer  // map[string]Database
 	Users unsafe.Pointer      // map[string]User
 
 	ToClose = make(chan bool, 2)

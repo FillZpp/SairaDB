@@ -43,12 +43,21 @@ func ConnRead(buf []byte, conn net.Conn, timeout int) (ret string, err error) {
 	return
 }
 
-func ConnWrite(s string, conn net.Conn, timeout int) (err error) {
+func ConnWriteString(s string, conn net.Conn, timeout int) (err error) {
 	if timeout > 0 {
 		conn.SetWriteDeadline(time.Now().
 			Add(time.Duration(timeout) * time.Millisecond))
 	}
 	_, err = conn.Write([]byte(s))
+	return
+}
+
+func ConnWrite(b []byte, conn net.Conn, timeout int) (err error) {
+	if timeout > 0 {
+		conn.SetWriteDeadline(time.Now().
+			Add(time.Duration(timeout) * time.Millisecond))
+	}
+	_, err = conn.Write(b)
 	return
 }
 

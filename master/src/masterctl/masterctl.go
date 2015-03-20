@@ -37,6 +37,7 @@ type MasterCtl struct {
 
 type SendMessage struct {
 	Message []string
+	count int  // Number of times the task will try send if it fails, -1 for ever
 	Ch chan error
 }
 

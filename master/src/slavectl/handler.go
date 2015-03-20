@@ -52,11 +52,11 @@ func slaveHandler(conn net.Conn) {
 	
 	if msg != cookie {
 		handlerLog(ip, "wrong cookie")
-		common.ConnWrite("wrong cookie", conn, 100)
+		common.ConnWriteString("wrong cookie", conn, 100)
 		return
 	}
 		
-	err = common.ConnWrite("ok", conn, 100)
+	err = common.ConnWriteString("ok", conn, 100)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
