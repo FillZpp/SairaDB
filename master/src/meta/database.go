@@ -53,6 +53,8 @@ type AlterDB struct {
 var (
 	dbFile *os.File
 	DBChan = make(chan AlterDB, 100)
+	closeDB = make(chan bool, 1)
+	dbClosed = make(chan bool, 1)
 )
 
 func initDatabase() {
@@ -67,7 +69,6 @@ func initDatabase() {
 		os.Exit(3)
 	}
 
-	var meta []string
 	var databases map[string]Database
 	bt := make([]byte, 10)
 	n, err := dbFile.Read(bt)
@@ -80,20 +81,16 @@ func initDatabase() {
 			strs[1] += string(bt)
 		}
 		
-		metaBuf := bytes.NewBufferString(strs[1])
-		metaDec := gob.NewDecoder(metaBuf)
-		_ = metaDec.Decode(&meta)
+		buf := bytes.NewBufferString(strs[1])
+		dec := gob.NewDecoder(buf)
+		_ = dec.Decode(&databases)
 
-		Term, _ = strconv.ParseUint(meta[0], 0, 0)
-
-		dbBuf := bytes.NewBufferString(meta[1])
-		dbDec := gob.NewDecoder(dbBuf)
-		_ = dbDec.Decode(&databases)
+		b := buf.Bytes()
+		DBEncode = unsafe.Pointer(&b)
 	}
 	
 	if databases == nil {
 		databases = make(map[string]Database)
-		Term = 0
 	}
 
 	_, ok := databases["default"]
@@ -117,23 +114,18 @@ func initDatabase() {
 }
 
 func syncDBFile() {
-	dbBuf := new(bytes.Buffer)
-	dbEnc := gob.NewEncoder(dbBuf)
-	dbEnc.Encode((*map[string]Database)(atomic.LoadPointer(&Databases)))
-	dbStr := dbBuf.String()
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	enc.Encode((*map[string]Database)(atomic.LoadPointer(&Databases)))
 
-	metaBuf := new(bytes.Buffer)
-	metaEnc := gob.NewEncoder(metaBuf)
-	metaEnc.Encode([]string{
-		fmt.Sprintf("%v", atomic.LoadUint64(&Term)),
-		dbStr,
-	})
-	
-	s := metaBuf.String()
+	s := buf.String()
 	s = strconv.Itoa(len(s)) + ";" + s
 	
 	dbFile.Seek(0, 0)
 	dbFile.WriteString(s)
+
+	b := buf.Bytes()
+	atomic.StorePointer(&DBEncode, unsafe.Pointer(&b))
 }
 
 func alterDBTask() {
@@ -143,9 +135,9 @@ func alterDBTask() {
 	for {
 		if tmp == nil {
 			select {
-			case <-ToClose:
+			case <-closeDB:
 				dbFile.Close()
-				GetEnd<- true
+				dbClosed<- true
 				for {
 					ad = <-DBChan
 					ad.Ch<- errors.New("This master is to close.")
@@ -159,7 +151,7 @@ func alterDBTask() {
 				tmp = nil
 			}
 		} else {
-			ch := make(chan bool)
+			ch := make(chan bool, 1)
 			go common.SetTimeout(ch, 10)
 			select {
 			case ad = <-DBChan:
@@ -169,7 +161,6 @@ func alterDBTask() {
 			}
 
 			atomic.StorePointer(&Databases, unsafe.Pointer(tmp))
-			atomic.AddUint64(&Term, 1)
 			tmp = nil
 			syncDBFile()
 		}

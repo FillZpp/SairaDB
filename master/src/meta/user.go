@@ -64,6 +64,8 @@ type AlterUser struct {
 var (
 	userFile *os.File
 	UserChan = make(chan AlterUser, 100)
+	closeUser = make(chan bool, 1)
+	userClosed = make(chan bool, 1)
 )
 
 func initUser() {
@@ -78,7 +80,6 @@ func initUser() {
 		os.Exit(3)
 	}
 
-	var meta []string
 	var users map[string]User
 	bt := make([]byte, 10)
 	n, err := userFile.Read(bt)
@@ -91,18 +92,12 @@ func initUser() {
 			strs[1] += string(bt)
 		}
 		
-		metaBuf := bytes.NewBufferString(strs[1])
-		metaDec := gob.NewDecoder(metaBuf)
-		_ = metaDec.Decode(&meta)
+		buf := bytes.NewBufferString(strs[1])
+		dec := gob.NewDecoder(buf)
+		_ = dec.Decode(&users)
 
-		term, _ := strconv.ParseUint(meta[0], 0, 0)
-		if term > Term {
-			Term = term
-		}
-
-		userBuf := bytes.NewBufferString(meta[1])
-		userDec := gob.NewDecoder(userBuf)
-		_ = userDec.Decode(&users)
+		b := buf.Bytes()
+		UserEncode = unsafe.Pointer(&b)
 	}
 	
 	if users == nil {
@@ -125,23 +120,18 @@ func initUser() {
 }
 
 func syncUserFile() {
-	userBuf := new(bytes.Buffer)
-	userEnc := gob.NewEncoder(userBuf)
-	userEnc.Encode((*map[string]User)(Users))
-	userStr := userBuf.String()
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	enc.Encode((*map[string]User)(Users))
 
-	metaBuf := new(bytes.Buffer)
-	metaEnc := gob.NewEncoder(metaBuf)
-	metaEnc.Encode([]string{
-		fmt.Sprintf("%v", atomic.LoadUint64(&Term)),
-		userStr,
-	})
-
-	s := metaBuf.String()
+	s := buf.String()
 	s = strconv.Itoa(len(s)) + ";" + s
 
 	userFile.Seek(0, 0)
 	userFile.WriteString(s)
+
+	b := buf.Bytes()
+	atomic.StorePointer(&UserEncode, unsafe.Pointer(&b))
 }
 
 func alterUserTask() {
@@ -151,9 +141,9 @@ func alterUserTask() {
 	for {
 		if tmp == nil {
 			select {
-			case <-ToClose:
+			case <-closeUser:
 				userFile.Close()
-				GetEnd<- true
+				userClosed<- true
 				for {
 					au := <-UserChan
 					au.Ch<- errors.New("This master is to close.")
@@ -167,7 +157,7 @@ func alterUserTask() {
 				tmp = nil
 			}
 		} else {
-			ch := make(chan bool)
+			ch := make(chan bool, 1)
 			go common.SetTimeout(ch, 10)
 			select {
 			case au = <- UserChan:
@@ -177,7 +167,6 @@ func alterUserTask() {
 			}
 			
 			atomic.StorePointer(&Users, unsafe.Pointer(tmp))
-			atomic.AddUint64(&Term, 1)
 			tmp = nil
 			syncUserFile()
 		}

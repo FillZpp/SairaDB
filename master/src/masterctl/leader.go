@@ -41,6 +41,7 @@ func findLeader() {
 			return
 		}
 		meta.Term++
+		meta.TermChan<- true
 		
 		if len(MasterList) == 1 {
 			atomic.StoreInt32(&Leader, 0)

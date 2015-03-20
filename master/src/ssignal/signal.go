@@ -46,13 +46,10 @@ func sigHanderTask() {
 	}
 
 	meta.ToClose<- true
-	meta.ToClose<- true
-
-	<-meta.GetEnd
-	<-meta.GetEnd
+	<-meta.Closed
 
 	slog.ToClose<- true
-	<-slog.GetEnd
+	<-slog.Closed
 
 	os.Exit(0)
 }

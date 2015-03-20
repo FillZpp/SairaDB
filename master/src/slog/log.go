@@ -36,7 +36,7 @@ var (
 	fileSize int
 
 	ToClose = make(chan bool)
-	GetEnd = make(chan bool)
+	Closed = make(chan bool)
 	ExitLog string
 )
 
@@ -91,7 +91,7 @@ func task() {
 				logFile.WriteString(stime.TimeFormat() + 
 					" This master closed " + ExitLog + ".\n")
 				logFile.Close()
-				GetEnd<- true
+				Closed<- true
 				for {
 					<-LogChan
 				}

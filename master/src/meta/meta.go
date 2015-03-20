@@ -32,12 +32,14 @@ import (
 var (
 	metaDir string
 
-	Term uint64
+	Term uint64 = 0
 	Databases unsafe.Pointer  // map[string]Database
+	DBEncode unsafe.Pointer
 	Users unsafe.Pointer      // map[string]User
+	UserEncode unsafe.Pointer
 
-	ToClose = make(chan bool, 2)
-	GetEnd = make(chan bool)
+	ToClose = make(chan bool)
+	Closed = make(chan bool)
 )
 
 func Init() {
@@ -56,7 +58,22 @@ func Init() {
 
 	initDatabase()
 	initUser()
+	initTerm()
 
+	go closeTask()
 }
 
+func closeTask() {
+	<-ToClose
+
+	closeDB<- true
+	closeUser<- true
+	closeTerm<- true
+
+	<-dbClosed
+	<-userClosed
+	<-termClosed
+
+	Closed<- true
+}
 
