@@ -84,8 +84,7 @@ func initDatabase() {
 		metaDec := gob.NewDecoder(metaBuf)
 		_ = metaDec.Decode(&meta)
 
-		term, _ := strconv.Atoi(meta[0])
-		Term = int32(term)
+		Term, _ = strconv.ParseUint(meta[0], 0, 0)
 
 		dbBuf := bytes.NewBufferString(meta[1])
 		dbDec := gob.NewDecoder(dbBuf)
@@ -126,7 +125,7 @@ func syncDBFile() {
 	metaBuf := new(bytes.Buffer)
 	metaEnc := gob.NewEncoder(metaBuf)
 	metaEnc.Encode([]string{
-		strconv.Itoa(int(atomic.LoadInt32(&Term))),
+		fmt.Sprintf("%v", atomic.LoadUint64(&Term)),
 		dbStr,
 	})
 	
@@ -170,7 +169,7 @@ func alterDBTask() {
 			}
 
 			atomic.StorePointer(&Databases, unsafe.Pointer(tmp))
-			atomic.AddInt32(&Term, 1)
+			atomic.AddUint64(&Term, 1)
 			tmp = nil
 			syncDBFile()
 		}

@@ -62,7 +62,7 @@ func test() {
 	//meta.DBChan<- meta.AlterDB{ make(chan error, 1), "add_db", []string{"test"}}
 	//meta.UserChan<- meta.AlterUser{ make(chan error, 1), "add_user", []string{"wsy", "1234"}}
 	time.Sleep(time.Millisecond * 100)
-	fmt.Println("term:", atomic.LoadInt32(&(meta.Term)))
+	fmt.Println("term:", atomic.LoadUint64(&(meta.Term)))
 	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
 	time.Sleep(time.Millisecond * 100)

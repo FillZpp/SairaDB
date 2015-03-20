@@ -27,6 +27,7 @@ import (
 
 	"slog"
 	"common"
+	"meta"
 )
 
 func sendLog(ip, reason string) {
@@ -80,9 +81,10 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 			atomic.AddInt32(&(MasterList[idx].Status), 1)
 			sendLog(ip, "send connected")
 
-			if atomic.LoadInt32(&leader) == 0 {
+			if atomic.LoadInt32(&Leader) == 0 {
 				b, _ = json.Marshal([]string{"",
-					"leader", fmt.Sprintf("%v", term)})
+					"leader", fmt.Sprintf("%v",
+						atomic.LoadUint64(&(meta.Term)))})
 				err = common.ConnWrite(b, conn, 500)
 				if err != nil {
 					sendLog(ip, err.Error())

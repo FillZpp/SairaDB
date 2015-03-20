@@ -95,9 +95,9 @@ func initUser() {
 		metaDec := gob.NewDecoder(metaBuf)
 		_ = metaDec.Decode(&meta)
 
-		term, _ := strconv.Atoi(meta[0])
-		if int32(term) > Term {
-			Term = int32(term)
+		term, _ := strconv.ParseUint(meta[0], 0, 0)
+		if term > Term {
+			Term = term
 		}
 
 		userBuf := bytes.NewBufferString(meta[1])
@@ -133,7 +133,7 @@ func syncUserFile() {
 	metaBuf := new(bytes.Buffer)
 	metaEnc := gob.NewEncoder(metaBuf)
 	metaEnc.Encode([]string{
-		strconv.Itoa(int(atomic.LoadInt32(&Term))),
+		fmt.Sprintf("%v", atomic.LoadUint64(&Term)),
 		userStr,
 	})
 
@@ -177,7 +177,7 @@ func alterUserTask() {
 			}
 			
 			atomic.StorePointer(&Users, unsafe.Pointer(tmp))
-			atomic.AddInt32(&Term, 1)
+			atomic.AddUint64(&Term, 1)
 			tmp = nil
 			syncUserFile()
 		}

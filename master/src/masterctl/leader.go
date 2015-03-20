@@ -27,11 +27,12 @@ import (
 
 	"stime"
 	"common"
+	"meta"
 )
 
 func findLeader() {
 	for {
-		if atomic.LoadInt32(&leader) >= 0 {
+		if atomic.LoadInt32(&Leader) >= 0 {
 			return
 		}
 
@@ -39,10 +40,10 @@ func findLeader() {
 		if !atomic.CompareAndSwapInt32(&voteFor, -1, 0) {
 			return
 		}
-		atomic.AddUint64(&term, 1)
+		meta.Term++
 		
 		if len(MasterList) == 1 {
-			atomic.StoreInt32(&leader, 0)
+			atomic.StoreInt32(&Leader, 0)
 		}
 
 		allVote := 1
@@ -50,7 +51,7 @@ func findLeader() {
 		resChans := make([]chan []string, 0, len(MasterList) - 1)
 		
 		id := stime.GetID()
-		v := []string{id, "vote", fmt.Sprintf("%v", term)}
+		v := []string{id, "vote", fmt.Sprintf("%v", meta.Term)}
 		for _, m := range MasterList[1:] {
 			// If connection failed
 			if atomic.LoadInt32(&(m.Status)) < 2 { 
@@ -84,13 +85,13 @@ func findLeader() {
 		
 		if getVote > allVote/2 {
 			fmt.Println("Leader!")
-			atomic.StoreInt32(&leader, 0)
+			atomic.StoreInt32(&Leader, 0)
 			atomic.StoreInt32(&voteFor, -1)
 			
 			// Tell other masters
 			resChans = resChans[:0]
 			id = stime.GetID()
-			msg := []string{id, "leader", fmt.Sprintf("%v", term)}
+			msg := []string{id, "leader", fmt.Sprintf("%v", meta.Term)}
 			for _, m := range MasterList[1:] {
 				if atomic.LoadInt32(&(m.Status)) < 2 {
 					continue

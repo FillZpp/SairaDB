@@ -32,7 +32,7 @@ import (
 var (
 	metaDir string
 
-	Term int32
+	Term uint64
 	Databases unsafe.Pointer  // map[string]Database
 	Users unsafe.Pointer      // map[string]User
 

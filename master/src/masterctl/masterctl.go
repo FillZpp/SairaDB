@@ -52,8 +52,7 @@ var (
 	MasterMap = make(map[string]*MasterCtl)
 	MasterList []*MasterCtl
 
-	term uint64 = 0
-	leader int32 = -1
+	Leader int32 = -1
 	voteFor int32 = -1
 	followerNum int32 = 0
 )
