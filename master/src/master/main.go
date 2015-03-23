@@ -64,9 +64,7 @@ func test() {
 	time.Sleep(time.Millisecond * 100)
 	fmt.Println("term:", atomic.LoadUint64(&(meta.Term)))
 	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
-	fmt.Println((*[]byte)(atomic.LoadPointer(&(meta.DBEncode))))
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
-	fmt.Println((*[]byte)(atomic.LoadPointer(&(meta.UserEncode))))
 	time.Sleep(time.Millisecond * 100)
 }
 
