@@ -37,7 +37,7 @@ type MasterCtl struct {
 
 type SendMessage struct {
 	Message []string
-	count int  // Number of times the task will try send if it fails, -1 forever
+	Ever bool
 	Ch chan error
 }
 
@@ -72,18 +72,18 @@ func Init() {
 	listenChans := make(map[string]chan net.Conn)
 	for idx, ip := range config.MasterList[1:] {
 		mc := MasterCtl{
-			int32(idx),
+			int32(idx + 1),
 			ip,
 			make(chan SendMessage, 100),
 			make(chan RecvRegister, 100),
-			0,
+			2,
 		}
 		MasterMap[ip] = &mc
 		MasterList = append(MasterList, &mc)
 		ch := make(chan net.Conn, 1)
 		listenChans[ip] = ch
-		go sendTask(idx, ip, mc.SendChan)
-		go receiveTask(idx, ip, ch, mc.RecvChan)
+		go sendTask(idx + 1, ip, mc.SendChan)
+		go receiveTask(idx + 1, ip, ch, mc.RecvChan)
 	}
 
 	go listenTask(listener, listenChans)

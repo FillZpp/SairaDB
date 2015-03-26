@@ -24,6 +24,7 @@ import (
 	"time"
 	"sync/atomic"
 	"encoding/json"
+	"container/list"
 
 	"slog"
 	"common"
@@ -40,21 +41,38 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 	var err error
 	var msg string
 	var b []byte
+	var sm SendMessage
 	addr := ip + ":" + port
 	buf := make([]byte, 10)
-	once := true
+	onceLog := true
+	waitSendList := list.New()
 	for {
 		if conn == nil {
 			conn, err = net.Dial("tcp", addr)
 			if err != nil {
-				if once {
+				if onceLog {
 					sendLog(ip, err.Error())
+					atomic.AddInt32(&(MasterList[idx].Status), -1)
+					a := true
+					for a {
+						tch := make(chan bool)
+						go common.SetTimeout(tch, 100)
+						select {
+						case sm = <-ch:
+							sm.Ch<- err
+							if sm.Ever {
+								waitSendList.PushFront(sm)
+							}
+						case <-tch:
+							a = false
+						}
+					}
 				}
-				once = false
-				time.Sleep(time.Second)
+				onceLog = false
+				time.Sleep(time.Second * 5)
 				continue
 			}
-			once = true
+			onceLog = true
 
 			err = common.ConnWriteString(cookie, conn, 500)
 			if err != nil {
@@ -102,28 +120,39 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 				}
 			}
 		}  // if conn == nil
-		
-		sm := <-ch
-		b, err = json.Marshal(sm.Message)
-		if err != nil {
-			sm.Ch<- err
-			continue
-		}
-		err = common.ConnWrite(b, conn, 500)
-		if err != nil {
-			sm.Ch<- err
-			sendLog(ip, err.Error())
-			conn.Close()
-			conn = nil
-			continue
-		}
-		sm.Ch<- nil
-		_, err = common.ConnRead(buf, conn, 500)
-		if err != nil {
-			sendLog(ip, err.Error())
-			conn.Close()
-			conn = nil
-			continue
+
+		ele := waitSendList.Front()
+		for {
+			if ele != nil {
+				sm = ele.Value.(SendMessage)
+			} else {
+				sm = <-ch
+			}
+			
+			b, _ = json.Marshal(sm.Message)
+			
+			err = common.ConnWrite(b, conn, 500)
+			if err == nil {
+				_, err = common.ConnRead(buf, conn, 500)
+			}
+			if err != nil {
+				sm.Ch<- err
+				sendLog(ip, err.Error())
+				conn.Close()
+				conn = nil
+				if ele == nil && sm.Ever {
+					waitSendList.PushFront(sm)
+				}
+				break
+			}
+			sm.Ch<- nil
+
+			if ele == nil {
+				ele = waitSendList.Front()
+			} else {
+				waitSendList.Remove(ele)
+				ele.Next()
+			}
 		}
 	}
 }
