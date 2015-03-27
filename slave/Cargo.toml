@@ -3,3 +3,7 @@
 name = "slave"
 version = "0.0.1"
 authors = ["Siyu Wang <FillZpp.pub@gmail.com>"]
+
+[dependencies]
+sys-info = "*"
+
