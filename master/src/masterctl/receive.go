@@ -33,7 +33,7 @@ func recvLog(ip, reason string) {
 }
 
 func receiveTask(idx int, ip string, connChan chan net.Conn,
-	rsgChan chan RecvRegister) {
+	recvChan chan RecvRegister) {
 	var conn net.Conn
 	var err error
 	var msg string
@@ -67,8 +67,8 @@ func receiveTask(idx int, ip string, connChan chan net.Conn,
 			atomic.AddInt32(&(MasterList[idx].Status), 1)
 			recvLog(ip, "receive connected")
 		}  // if conn == nil
-		
-		
+
+		// TODO
 	}
 }
 

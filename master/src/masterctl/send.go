@@ -36,7 +36,7 @@ func sendLog(ip, reason string) {
 		fmt.Sprintf("master controller send task (%v): %v", ip, reason)
 }
 
-func sendTask(idx int, ip string, ch chan SendMessage) {
+func sendTask(idx int, ip string, sendChan chan SendMessage) {
 	var conn net.Conn
 	var err error
 	var msg string
@@ -58,7 +58,7 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 						tch := make(chan bool)
 						go common.SetTimeout(tch, 100)
 						select {
-						case sm = <-ch:
+						case sm = <-sendChan:
 							sm.Ch<- err
 							if sm.Ever {
 								waitSendList.PushFront(sm)
@@ -126,7 +126,7 @@ func sendTask(idx int, ip string, ch chan SendMessage) {
 			if ele != nil {
 				sm = ele.Value.(SendMessage)
 			} else {
-				sm = <-ch
+				sm = <-sendChan
 			}
 			
 			b, _ = json.Marshal(sm.Message)
