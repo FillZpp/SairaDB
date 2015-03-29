@@ -65,7 +65,7 @@ func Init() {
 	listener, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
-			"\nError:\nMaster controller can not listen :%v\n", port)
+			"Error:\nMaster controller can not listen :%v\n", port)
 		os.Exit(3)
 	}
 

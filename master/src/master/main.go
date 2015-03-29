@@ -40,7 +40,7 @@ import (
 
 func main() {
 	config.GetHomePath()
-	config.Init(handleFlag())
+	config.Init(getFlags())
 
 	stime.Init()
 	meta.Init()
@@ -68,7 +68,7 @@ func test() {
 	time.Sleep(time.Millisecond * 100)
 }
 
-func handleFlag() (flagMap map[string]string) {
+func getFlags() (flagMap map[string]string) {
 	flagMap = make(map[string]string)
 	help1   := flag.Bool("h", false, "")
 	help2   := flag.Bool("help", false, "")
@@ -92,7 +92,7 @@ func handleFlag() (flagMap map[string]string) {
 	if len(*confDir) > 0 {
 		if !common.IsDirExist(*confDir) {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nConfig directory does not exist: %v\n",
+				"Error:\nConfig directory does not exist: %v\n",
 				*confDir)
 			os.Exit(2)
 		}
@@ -110,7 +110,7 @@ func handleFlag() (flagMap map[string]string) {
 		case "full":   flagMap["log-level"] = *logLevel
 		default: {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nInvalid given log-level: %v\n",
+				"Error:\nInvalid given log-level: %v\n",
 				*logLevel)
 			os.Exit(2)
 		}
@@ -132,11 +132,11 @@ func handleFlag() (flagMap map[string]string) {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: saira-master [OPTIONS] FLAG\n")
+	fmt.Fprintln(os.Stderr, "Usage: saira-master [OPTIONS]\n")
 	fmt.Fprintln(os.Stderr, "Options:")
 	
 	fmt.Fprintln(os.Stderr,
-		"    --conf-dir DIR      Find config files in <dir>")
+		"    --conf-dir DIR      Find config files in <DIR>")
 	fmt.Fprintln(os.Stderr,
 		"    --local             Cluster only on local machine")
 	fmt.Fprintln(os.Stderr,
@@ -146,7 +146,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr,
 		"    --cookie COOKIE     Set cookie for connection safety")
 	fmt.Fprintln(os.Stderr,
-		"    -h --help           Display usage")
+		"    -h --help           Print this help menu")
 }
 
 

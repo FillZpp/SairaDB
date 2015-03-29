@@ -48,7 +48,7 @@ func Init() {
 		err := os.MkdirAll(logDir, 0700)
 		if err != nil {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nCan not create log dir %v:\n%v\n",
+				"Error:\nCan not create log dir %v:\n%v\n",
 				err.Error())
 			os.Exit(3)
 		}
@@ -65,7 +65,7 @@ func newLogFile(b bool) {
 	if err != nil {
 		if b {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nCan not create new log file %v:\n%v\n",
+				"Error:\nCan not create new log file %v:\n%v\n",
 				fname,
 				err.Error())
 			os.Exit(3)

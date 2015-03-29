@@ -37,13 +37,13 @@ func readMastersFile() {
 	host, err := os.Hostname()
 	if err != nil {
 		fmt.Fprintln(os.Stderr,
-			"\nError: can not get local hostname.")
+			"Error: can not get local hostname.")
 		os.Exit(3)
 	}
 	
 	localIPs, err = net.LookupHost(host)
 	if err != nil || len(localIPs) == 0 {
-		fmt.Fprintln(os.Stderr, "\nError: can not find local ip.")
+		fmt.Fprintln(os.Stderr, "Error: can not find local ip.")
 		os.Exit(2)
 	}
 
@@ -100,7 +100,7 @@ func readMastersFile() {
 
 	if MasterList[0] == "" {
 		fmt.Fprintf(os.Stderr,
-			"\nError:\nNo local ip appointed in %v\n",
+			"Error:\nNo local ip appointed in %v\n",
 			mastersFile)
 		os.Exit(3)
 	}
@@ -110,12 +110,12 @@ func insertIP(host string, lineNum int) {
 	ips, err := net.LookupHost(host)
 	if err != nil || len(ips) == 0 {
 		fmt.Fprintf(os.Stderr,
-			"\nError:\n%v line %d: %v\nCan not find ip from the hostname\n",
+			"Error:\n%v line %d: %v\nCan not find ip from the hostname\n",
 			mastersFile, lineNum, host)
 		os.Exit(3)
 	} else if len(ips) > 1 {
 		fmt.Fprintln(os.Stderr,
-			"\nError:\n%v line %d: %v\nFind more than one ip from the hostname.\n",
+			"Error:\n%v line %d: %v\nFind more than one ip from the hostname.\n",
 			mastersFile, lineNum, host)
 		os.Exit(3)
 	}
@@ -124,7 +124,7 @@ func insertIP(host string, lineNum int) {
 		if ips[0] == v {
 			if MasterList[0] != "" {
 				fmt.Fprintf(os.Stderr,
-					"\nError:\nMore than one local ips in file %v\n",
+					"Error:\nMore than one local ips in file %v\n",
 					mastersFile)
 				os.Exit(3)
 			}
@@ -205,7 +205,7 @@ func updateConf(key, value string, lineNum int) {
 	_, ok := ConfMap[key]
 	if !ok {
 		fmt.Fprintf(os.Stderr,
-			"\nError:\n%v line %d: %v %v\nUnknown config.\n",
+			"Error:\n%v line %d: %v %v\nUnknown config.\n",
 			path.Join(ConfMap["conf-dir"] + "/master.conf"), lineNum,
 			key, value)
 		os.Exit(3)
@@ -215,7 +215,7 @@ func updateConf(key, value string, lineNum int) {
 		if key == v {
 			if !(value == "on" || value == "off") {
 				fmt.Fprintln(os.Stderr,
-					"\nError:\nInvalid config, this must be 'on' or 'off':\n")
+					"Error:\nInvalid config, this must be 'on' or 'off':\n")
 				fmt.Fprintf(os.Stderr, "%v %v\n", key, value)
 				os.Exit(3)
 			}
@@ -231,7 +231,7 @@ func updateConf(key, value string, lineNum int) {
 		case "full":   break
 		default: {
 			fmt.Fprintf(os.Stderr,
-				"\nError:\nInvalid config:\nlog-level %v\n",
+				"Error:\nInvalid config:\nlog-level %v\n",
 				value)
 			os.Exit(3)
 		}
@@ -245,7 +245,7 @@ func updateConf(key, value string, lineNum int) {
 			_, err := strconv.Atoi(value)
 			if err != nil {
 				fmt.Fprintf(os.Stderr,
-					"\nError:\nInvalid config:\n%v %v\n",
+					"Error:\nInvalid config:\n%v %v\n",
 					key, value)
 				os.Exit(3)
 			}

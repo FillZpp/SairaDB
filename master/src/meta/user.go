@@ -74,7 +74,7 @@ func initUser() {
 		os.O_RDWR | os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
-			"\nError:\nCan not open meta file %v:\n%v\n",
+			"Error:\nCan not open meta file %v:\n%v\n",
 			path.Join(metaDir, "/user.meta"),
 			err.Error())
 		os.Exit(3)

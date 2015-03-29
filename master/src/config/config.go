@@ -54,7 +54,7 @@ func GetHomePath() {
 	}
 	
 	if HomeDir == "" {
-		fmt.Fprintln(os.Stderr, "\nError:\nCan not find HOME path in environment.")
+		fmt.Fprintln(os.Stderr, "Error:\nCan not find HOME path in environment.")
 		os.Exit(2)
 	}
 }
