@@ -15,28 +15,3 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-
-#![feature(libc)]
-#![feature(path_ext)]
-
-mod sr_core;
-mod sr_args;
-
-extern crate sys_info;
-
-
-fn main() {
-    println!("{:?}", sr_args::get_flags());
-
-    test();
-}
-
-fn test() {
-    let a = sr_core::BasicTypes::Int(10);
-    println!("{:?}", a);
-    println!("{}", sys_info::hostname().unwrap());
-}
-
-
-
-
