@@ -8,4 +8,5 @@ authors = ["Siyu Wang <FillZpp.pub@gmail.com>"]
 sys-info = "*"
 getopts = "*"
 rust-crypto = "*"
+time = "*"
 
