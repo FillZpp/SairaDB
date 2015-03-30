@@ -18,25 +18,22 @@
 
 #![feature(libc)]
 #![feature(path_ext)]
+#![feature(lookup_host, ip_addr)]
 
-mod sr_core;
+
+mod sr_prefix;
 mod sr_args;
-
-extern crate sys_info;
+mod sr_config;
+mod sr_core;
 
 
 fn main() {
-    println!("{:?}", sr_args::get_flags());
+    let conf_map = sr_args::get_flags();
+    let masters = sr_config::init(&conf_map);
 
-    test();
+    println!("{:?}", conf_map);
+    println!("{:?}", masters);
 }
-
-fn test() {
-    let a = sr_core::BasicTypes::Int(10);
-    println!("{:?}", a);
-    println!("{}", sys_info::hostname().unwrap());
-}
-
 
 
 

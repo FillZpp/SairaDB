@@ -126,7 +126,17 @@ func sendTask(idx int, ip string, sendChan chan SendMessage) {
 			if ele != nil {
 				sm = ele.Value.(SendMessage)
 			} else {
-				sm = <-sendChan
+				tch := make(chan bool, 1)
+				go common.SetTimeout(tch, 1000)
+				select {
+				case <-tch:
+					sm = SendMessage{
+						[]string{"heartbeat"},
+						false,
+						make(chan error, 1),
+					}
+				case sm = <-sendChan:
+				}
 			}
 			
 			b, _ = json.Marshal(sm.Message)

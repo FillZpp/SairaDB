@@ -142,7 +142,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr,
 		"    --log-level LEVEL   Define log level [error/slow/full]")
 	fmt.Fprintln(os.Stderr,
-		"    --data-dir DIR      Save meta data and log in {DIR}/master")
+		"    --data-dir DIR      Save meta data and log in <DIR>/master")
 	fmt.Fprintln(os.Stderr,
 		"    --cookie COOKIE     Set cookie for connection safety")
 	fmt.Fprintln(os.Stderr,

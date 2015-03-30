@@ -7,4 +7,5 @@ authors = ["Siyu Wang <FillZpp.pub@gmail.com>"]
 [dependencies]
 sys-info = "*"
 getopts = "*"
+rust-crypto = "*"
 

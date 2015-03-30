@@ -15,3 +15,73 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+
+extern crate libc;
+
+use std::io::{stderr, Write, Read};
+use std::collections::HashMap;
+use std::fs::File;
+use std::net;
+
+
+pub fn init(map: &HashMap<String, String>)  -> Vec<String> {
+    read_masters(map.get("conf-dir").unwrap().to_string())
+}
+
+fn read_masters(conf_dir: String) -> Vec<String> {
+    let mut masters = Vec::new();
+
+    let fname = conf_dir + "/masters";
+    let mut f = match File::open(&fname) {
+        Ok(f) => f,
+        Err(e) => {
+            let _ = writeln!(&mut stderr(),
+                             "Error:\nCan not find {}:\n{}", fname, e);
+            unsafe { libc::exit(3); }
+        }
+    };
+
+    let mut s = String::new();
+    if let Err(e) = f.read_to_string(&mut s) {
+        let _ = writeln!(&mut stderr(), "Error:\nRead {}:\n{}", fname, e);
+        unsafe { libc::exit(3); }
+    }
+
+    let lines = s.split('\n');
+    let mut n = 0;
+    for line in lines {
+        n += 1;
+        let host = line.trim();
+        if host.len() > 0 {
+            let mut ips = match net::lookup_host(host) {
+                Ok(a) => a,
+                Err(e) => {
+                    let _ = writeln!(&mut stderr(),
+                                     "Error:\n{} line {}: {}\n{}",
+                                     fname, n, host, e);
+                    unsafe { libc::exit(3); }
+                }
+            };
+
+            masters.push(match ips.next() {
+                Some(Ok(a)) => format!("{}", a.ip()),
+                Some(Err(e)) => {
+                    let _ = writeln!(&mut stderr(),
+                                     "Error:\n{} line {}: {}\n{}",
+                                     fname, n, host, e);
+                    unsafe { libc::exit(3); }
+                }
+                None => {
+                    let _ = writeln!(&mut stderr(),
+                                     "Error:\n{} line {}: {}\nCan not find ip",
+                                     fname, n, host);
+                    unsafe { libc::exit(3); }
+                }
+            });
+        }
+    }
+
+    masters
+}
+
+
