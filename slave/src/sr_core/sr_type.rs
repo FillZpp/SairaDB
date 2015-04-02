@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet, VecDeque, BTreeMap};
 use std::cmp::{Ord, Ordering, PartialOrd, Eq, PartialEq};
 use std::hash::{Hasher, Hash};
 
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum BasicTypes {
     Nothing,
@@ -34,6 +34,7 @@ pub enum BasicTypes {
     Date([i32; 6]),
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Types {
     BasicType(BasicTypes),

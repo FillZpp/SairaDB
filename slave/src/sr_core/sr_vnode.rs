@@ -16,25 +16,28 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
-use super::sr_type::{Types, BasicTypes};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT};
+use super::sr_db::Database;
 
 
-#[derive(Debug)]
-struct Unit {
-    value: Types,
-    attrs: Option<BTreeMap<String, Arc<Unit>>>,
+#[allow(dead_code)]
+pub struct VNode {
+    id: u64,
+    dups: Vec<String>,
+    dup_master: AtomicUsize,
+    dbs: HashMap<String, Database>
 }
 
-#[derive(Debug)]
-struct Column {
-    units: BTreeMap<BasicTypes, Unit>,
-}
-
-#[derive(Debug)]
-struct Table {
-    key: String,
-    columns: HashMap<String, Column>,
+#[allow(dead_code)]
+impl VNode {
+    pub fn new(id: u64) -> VNode {
+        VNode {
+            id: id,
+            dups: Vec::new(),
+            dup_master: ATOMIC_USIZE_INIT,
+            dbs: HashMap::new()
+        }
+    }
 }
 

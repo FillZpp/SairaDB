@@ -72,10 +72,6 @@ fn log_task(log_dir: String, rx: Receiver<String>) {
             let new_log = rx.recv().unwrap();
             tm = time::now();
             cache = tm_format(tm) + " " + &new_log + "\n";
-            if new_log == "shutdown".to_string() {
-                let _ = log_file.write_all(cache.as_bytes());
-                return;
-            }
         } else {
             let timeout = timer.oneshot(Duration::milliseconds(100));
             select! {

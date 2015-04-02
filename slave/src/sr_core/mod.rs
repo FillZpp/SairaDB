@@ -17,8 +17,10 @@
 
 
 mod sr_type;
-mod sr_table;
+mod sr_db;
+mod sr_vnode;
 
-pub use self::sr_type::BasicTypes as BasicTypes;
-pub use self::sr_type::Types as Types;
+pub use self::sr_type::*;
+pub use self::sr_db::*;
+pub use self::sr_vnode::*;
 

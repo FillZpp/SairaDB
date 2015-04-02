@@ -16,35 +16,40 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-#![feature(libc)]
-#![feature(path_ext)]
-#![feature(lookup_host, ip_addr)]
-#![feature(std_misc)]
-#![feature(old_io)]
-#![feature(thread_sleep)]
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
+use std::sync::mpsc::{Sender, Receiver};
+use super::sr_type::{Types, BasicTypes};
 
 
-mod sr_prefix;
-mod sr_args;
-mod sr_config;
-mod sr_log;
-mod sr_core;
-mod sr_time;
-
-
-fn main() {
-    let conf_map = sr_args::get_flags();
-    let masters = sr_config::init(&conf_map);
-
-    let (log_sender, log_thread)
-         = sr_log::init(conf_map.get("data-dir").unwrap().to_string());
-
-    println!("{:?}", conf_map);
-    println!("{:?}", masters);
-
-
-    sr_time::sleep(10);
+#[allow(dead_code)]
+struct Unit {
+    value: Types,
+    attrs: Option<BTreeMap<String, Arc<Unit>>>,
 }
 
+#[allow(dead_code)]
+struct Column {
+    units: BTreeMap<BasicTypes, Unit>,
+}
 
+#[allow(dead_code)]
+struct Alter {
+    res: Receiver<String>,
+    con: BTreeMap<String, Types>,
+    alt: i32  // 0 for insert, 1 for delete con, 2 for delete all rows
+}
+
+#[allow(dead_code)]
+struct Table {
+    key: String,
+    columns: HashMap<String, Column>,
+    alter_sender: Sender<Alter>,
+}
+
+#[allow(dead_code)]
+pub struct Database {
+    tables: HashMap<String, Table>,
+    alter_sender: Sender<Alter>
+}
 
