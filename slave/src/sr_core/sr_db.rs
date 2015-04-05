@@ -16,40 +16,34 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
-use std::sync::mpsc::{Sender, Receiver};
-use super::sr_type::{Types, BasicTypes};
+extern crate serialize;
+
+use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::sync::atomic::AtomicUsize;
+//use std::sync::Arc;
+//use std::sync::mpsc::{Sender, Receiver};
+use self::serialize::json::Json;
+//use super::sr_type::{Types, BasicTypes};
 
 
 #[allow(dead_code)]
-struct Unit {
-    value: Types,
-    attrs: Option<BTreeMap<String, Arc<Unit>>>,
+struct Page {
+    id: u64,
+    size: AtomicUsize,
+    units: BTreeMap<String, Json>
 }
 
 #[allow(dead_code)]
-struct Column {
-    units: BTreeMap<BasicTypes, Unit>,
-}
-
-#[allow(dead_code)]
-struct Alter {
-    res: Receiver<String>,
-    con: BTreeMap<String, Types>,
-    alt: i32  // 0 for insert, 1 for delete con, 2 for delete all rows
-}
-
-#[allow(dead_code)]
-struct Table {
-    key: String,
-    columns: HashMap<String, Column>,
-    alter_sender: Sender<Alter>,
+struct Set {
+    name: String,
+    size: AtomicUsize,
+    pages: VecDeque<Page>,
 }
 
 #[allow(dead_code)]
 pub struct Database {
-    tables: HashMap<String, Table>,
-    alter_sender: Sender<Alter>
+    sets: HashMap<String, Set>,
 }
+
+
 

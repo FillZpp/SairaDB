@@ -21,6 +21,7 @@
 #![feature(lookup_host, ip_addr)]
 #![feature(std_misc)]
 #![feature(old_io)]
+#![feature(rustc_private)]
 
 
 mod sr_prefix;

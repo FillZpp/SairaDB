@@ -16,11 +16,9 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-mod sr_type;
 mod sr_db;
 mod sr_vnode;
 
-pub use self::sr_type::*;
 pub use self::sr_db::*;
 pub use self::sr_vnode::*;
 
