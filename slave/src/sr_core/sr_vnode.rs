@@ -25,7 +25,7 @@ use super::sr_db::Database;
 pub struct VNode {
     id: u64,
     dups: Vec<String>,
-    dup_master: AtomicUsize,
+    master: AtomicUsize,
     dbs: HashMap<String, Database>
 }
 
@@ -35,7 +35,7 @@ impl VNode {
         VNode {
             id: id,
             dups: Vec::new(),
-            dup_master: ATOMIC_USIZE_INIT,
+            master: ATOMIC_USIZE_INIT,
             dbs: HashMap::new()
         }
     }

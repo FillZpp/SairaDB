@@ -17,10 +17,9 @@
 
 
 use std::thread;
-use std::time::Duration;
 
 
-pub fn sleep(i: i64) {
-    thread::sleep(Duration::milliseconds(i));
+pub fn sleep(t: u32) {
+    thread::sleep_ms(t);
 }
 

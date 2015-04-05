@@ -21,7 +21,6 @@
 #![feature(lookup_host, ip_addr)]
 #![feature(std_misc)]
 #![feature(old_io)]
-#![feature(thread_sleep)]
 
 
 mod sr_prefix;
