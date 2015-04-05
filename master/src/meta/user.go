@@ -22,28 +22,28 @@ import (
 	"os"
 	"path"
 	"fmt"
-	"encoding/gob"
+	"encoding/json"
 	"unsafe"
 	"errors"
 	"sync/atomic"
 	"strings"
 	"strconv"
-	"bytes"
 
 	"common"
 )
 
 const (
+	// TableAuth
 	Read  = 1
 	Write = 2
-	Alter = 4
-	Delete = 8
 
-	Create = 16
-	Drop = 32
-	
-	CreateUser = 64
-	Super = 128
+	// DatabaseAuth
+	Create = 1
+	Drop = 2
+
+	// GlobalAuth
+	CreateUser = 1
+	Super = 2
 )
 
 type User struct {
@@ -51,7 +51,7 @@ type User struct {
 	Password string
 	
 	GlobalAuth uint
-	NameSpaceAuth map[string]uint
+	DatabaseAuth map[string]uint
 	TableAuth map[string]uint
 }
 
@@ -91,21 +91,12 @@ func initUser() {
 			userFile.Read(bt)
 			strs[1] += string(bt)
 		}
-		
-		buf := bytes.NewBufferString(strs[1])
-		dec := gob.NewDecoder(buf)
-		_ = dec.Decode(&users)
 
-		b := buf.Bytes()
-		UserEncode = unsafe.Pointer(&b)
+		json.Unmarshal([]byte(strs[1]), &users)
 	}
 	
 	if users == nil {
 		users = make(map[string]User)
-	}
-
-	_, ok := users["root"]
-	if !ok {
 		users["root"] = User {
 			"root",
 			"",
@@ -120,18 +111,13 @@ func initUser() {
 }
 
 func syncUserFile() {
-	buf := new(bytes.Buffer)
-	enc := gob.NewEncoder(buf)
-	enc.Encode((*map[string]User)(Users))
-
-	s := buf.String()
-	s = strconv.Itoa(len(s)) + ";" + s
+	b, _ := json.Marshal((*map[string]User)(atomic.LoadPointer(&Users)))
+	s := string(b)
+	atomic.StorePointer(&UserEncode, unsafe.Pointer(&s))
+	s2 := strconv.Itoa(len(s)) + ";" + s
 
 	userFile.Seek(0, 0)
-	userFile.WriteString(s)
-
-	b := buf.Bytes()
-	atomic.StorePointer(&UserEncode, unsafe.Pointer(&b))
+	userFile.WriteString(s2)
 }
 
 func alterUserTask() {

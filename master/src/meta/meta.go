@@ -33,8 +33,10 @@ var (
 	metaDir string
 
 	Term uint64 = 0
-	Databases unsafe.Pointer  // map[string]Database
+	
+	Databases unsafe.Pointer  // map[string]int
 	DBEncode unsafe.Pointer
+	
 	Users unsafe.Pointer      // map[string]User
 	UserEncode unsafe.Pointer
 
