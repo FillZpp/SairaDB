@@ -36,6 +36,7 @@ struct Page {
 #[allow(dead_code)]
 struct Set {
     name: String,
+    key: String,
     size: AtomicUsize,
     pages: VecDeque<Page>,
 }

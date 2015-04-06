@@ -63,7 +63,7 @@ func test() {
 	//meta.UserChan<- meta.AlterUser{ make(chan error, 1), "add_user", []string{"wsy", "1234"}}
 	time.Sleep(time.Millisecond * 100)
 	fmt.Println("term:", atomic.LoadUint64(&(meta.Term)))
-	fmt.Println((*map[string]int)(atomic.LoadPointer(&(meta.Databases))))
+	fmt.Println((*map[string]meta.Database)(atomic.LoadPointer(&(meta.Databases))))
 	//fmt.Println(*(*string)(atomic.LoadPointer(&(meta.DBEncode))));
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
 	//fmt.Println(*(*string)(atomic.LoadPointer(&(meta.UserEncode))));
