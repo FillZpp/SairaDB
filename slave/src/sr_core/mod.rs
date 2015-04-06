@@ -16,9 +16,27 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+extern crate sys_info;
+
 mod sr_db;
 mod sr_vnode;
 
 pub use self::sr_db::*;
 pub use self::sr_vnode::*;
+use std::sync::mpsc::Sender;
+
+static mut td_num: u32 = 0;
+
+pub fn init(log_sender: Sender<String>) {
+    unsafe {
+        td_num = match sys_info::cpu_num() {
+            Ok(n) => if n < 2 { 2 } else { n },
+            Err(e) => {
+                let _ = log_sender.send("slave core get cpu num error: "
+                                        .to_string() + &e);
+                2
+            }
+        }
+    }
+}
 
