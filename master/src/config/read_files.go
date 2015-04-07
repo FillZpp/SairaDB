@@ -240,10 +240,10 @@ func updateConf(key, value string, lineNum int) {
 		return
 	}
 
-	for _, v := range IntConfs {
+	for _, v := range UintConfs {
 		if key == v {
-			_, err := strconv.Atoi(value)
-			if err != nil {
+			i, err := strconv.Atoi(value)
+			if err != nil || i < 1 {
 				fmt.Fprintf(os.Stderr,
 					"Error:\nInvalid config:\n%v %v\n",
 					key, value)

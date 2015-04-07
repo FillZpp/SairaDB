@@ -33,7 +33,8 @@ import (
 	"meta"
 	"slog"
 	"ssignal"
-	
+
+	"csthash"
 	"masterctl"
 	"slavectl"
 )
@@ -49,6 +50,7 @@ func main() {
 
 	masterctl.Init()
 	slavectl.Init()
+	csthash.Init()
 
 	test()
 }
@@ -58,7 +60,7 @@ func test() {
 		fmt.Println(k, v)
 	}
 	fmt.Println(config.MasterList)
-	fmt.Println()
+	fmt.Printf("\n%v\n", csthash.VNodes)
 	//meta.DBChan<- meta.AlterDB{ make(chan error, 1), "add_db", []string{"test"}}
 	//meta.UserChan<- meta.AlterUser{ make(chan error, 1), "add_user", []string{"wsy", "1234"}}
 	time.Sleep(time.Millisecond * 100)
@@ -67,6 +69,7 @@ func test() {
 	//fmt.Println(*(*string)(atomic.LoadPointer(&(meta.DBEncode))));
 	fmt.Println((*map[string]meta.User)(atomic.LoadPointer(&(meta.Users))))
 	//fmt.Println(*(*string)(atomic.LoadPointer(&(meta.UserEncode))));
+
 	time.Sleep(time.Millisecond * 100)
 }
 

@@ -16,49 +16,46 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package config
+package csthash
 
 import (
-	"path"
-	"crypto/md5"
-	"fmt"
+	"strconv"
+	"math"
+	//"fmt"
+
+	"config"
 )
 
-var BoolConfs = []string {
-	"serialize",
-	"local",
-	"delete-old-log",
+type VNode struct {
+	id uint64
+	hash uint64
+	dups []string
+	dup_master string
 }
 
-var UintConfs = []string {
-	"client-port",
-	"master-port",
-	"slave-port",
-	"vnode-num",
-	"dup-num",
+var (
+	Mod uint64 = uint64(math.Pow(2, 32))
+	VNodeNum uint64
+	DupNum uint64
+
+	VNodes []VNode
+)
+
+func Init() {
+	VNodeNum, _ = strconv.ParseUint(config.ConfMap["vnode-num"], 0, 0)
+	DupNum, _ = strconv.ParseUint(config.ConfMap["dup-num"], 0, 0)
+	VNodes = make([]VNode, 0, VNodeNum)
+
+	tmp := Mod / VNodeNum
+	var i uint64
+	for i = 0; i < VNodeNum; i++ {
+		VNodes = append(VNodes, VNode{
+			i,
+			i * tmp,
+			make([]string, 0, DupNum),
+			"",
+		})
+	}
 }
 
-func defaultConf() {
-	ConfMap["serialize"] = "on"
-	ConfMap["local"] = "off"
-	ConfMap["delete-old-log"] = "on"
-	
-	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
-	ConfMap["log-level"] = "error"
-
-	ConfMap["client-port"] = "4400"
-	ConfMap["master-port"] = "4401"
-	ConfMap["slave-port"]  = "4402"
-
-	ckMd5 := fmt.Sprintf("%x", md5.Sum([]byte("")))
-	ConfMap["client-cookie"] = ckMd5
-	ConfMap["master-cookie"] = ckMd5
-	ConfMap["slave-cookie"] = ckMd5
-
-	ConfMap["dup-num"] = "3"
-	ConfMap["vnode-num"] = "16"
-
-	// TODO
-	// readDeadLine
-}
 
