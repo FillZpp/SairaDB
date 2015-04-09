@@ -48,9 +48,9 @@ func main() {
 	slog.Init()
 	ssignal.Init()
 
+	csthash.Init()
 	masterctl.Init()
 	slavectl.Init()
-	csthash.Init()
 
 	test()
 }
@@ -60,7 +60,7 @@ func test() {
 		fmt.Println(k, v)
 	}
 	fmt.Println(config.MasterList)
-	fmt.Printf("\n%v\n", csthash.VNodes)
+	fmt.Println()
 	//meta.DBChan<- meta.AlterDB{ make(chan error, 1), "add_db", []string{"test"}}
 	//meta.UserChan<- meta.AlterUser{ make(chan error, 1), "add_user", []string{"wsy", "1234"}}
 	time.Sleep(time.Millisecond * 100)

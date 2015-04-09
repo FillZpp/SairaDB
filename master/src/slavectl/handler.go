@@ -22,6 +22,7 @@ import (
 	"net"
 	"fmt"
 	"time"
+	"sync/atomic"
 
 	"slog"
 	"common"
@@ -37,11 +38,34 @@ func slaveHandler(conn net.Conn) {
 	var err error
 	var msg string
 	var ip string
+	var status string
 	buf := make([]byte, 1000)
 	ip, _, err = net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
 		slog.LogChan<- "slave controller address split error: " + err.Error()
 		return
+	}
+
+	// check
+	mutex.Lock()
+	slv, ok := Slaves[ip]
+	if !ok {
+		slv = &Slave{
+			ip,
+			make([]uint64, 0),
+			0,
+			0,
+		}
+		Slaves[ip] = slv
+	}
+	mutex.Unlock()
+	
+	if atomic.CompareAndSwapInt32(&slv.sendStatus, 0, 1) {
+		status = "send"
+	} else if atomic.CompareAndSwapInt32(&slv.recvStatus, 0, 1) {
+		status = "recv"
+	} else {
+		status = "no need"
 	}
 
 	msg, err = common.ConnRead(buf, conn, 100)
@@ -56,11 +80,15 @@ func slaveHandler(conn net.Conn) {
 		return
 	}
 		
-	err = common.ConnWriteString("ok", conn, 100)
+	err = common.ConnWriteString(status, conn, 100)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
+	} else if status == "no need" {
+		handlerLog(ip, "no need")
+		return
 	}
+	
 	handlerLog(ip, "connected")
 
 	time.Sleep(time.Hour)

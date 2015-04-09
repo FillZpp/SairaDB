@@ -16,59 +16,9 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package slavectl
+package query
 
-import (
-	"net"
-	"os"
-	"fmt"
-	"sync"
+type Query struct {
 
-	"config"
-	"slog"
-)
-
-type Slave struct {
-	ip string
-	vnodes []uint64
-	sendStatus int32
-	recvStatus int32
 }
 
-var (
-	port string
-	cookie string
-
-	Slaves = make(map[string]*Slave)
-	mutex sync.Mutex
-)
-
-
-func Init() {
-	vnodeInit()
-	
-	port, _ = config.ConfMap["slave-port"]
-	cookie, _ = config.ConfMap["slave-cookie"]
-	listener, err := net.Listen("tcp", ":" + port)
-	if err != nil {
-		fmt.Fprintf(os.Stderr,
-			"Error:\nSlave controller can not listen: %v\n", port)
-		os.Exit(3)
-	}
-
-	go listenTask(listener)
-}
-
-func listenTask(listener net.Listener) {
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			slog.LogChan<- "slave controller accept error: " +
-				err.Error()
-			continue
-		}
-		go slaveHandler(conn)
-	}
-}
-			
-	

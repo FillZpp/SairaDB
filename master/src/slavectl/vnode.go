@@ -16,58 +16,52 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package csthash
+package slavectl
 
 import (
 	"strconv"
-	"math"
-	"crypto/md5"
-	"fmt"
 
 	"config"
 	"query"
+	"csthash"
 )
-
-type VNodeHash struct {
-	Hash uint64
-	Ch chan query.Query
-}
 
 var (
-	Mod uint64 = uint64(math.Pow(2, 32))
-	VNodeNum uint64
-	VNodeHashs []VNodeHash
+	VNodeCtls []chan []string
+	DupNum uint64
 )
 
-func Init() {
-	VNodeNum, _ = strconv.ParseUint(config.ConfMap["vnode-num"], 0, 0)
-	VNodeHashs = make([]VNodeHash, 0, VNodeNum)
-
-	tmp := Mod / VNodeNum
+func vnodeInit() {
+	DupNum, _ = strconv.ParseUint(config.ConfMap["dup-num"], 0, 0)
+	VNodeCtls = make([]chan []string, csthash.VNodeNum)
 	var i uint64
-	for i = 0; i < VNodeNum; i++ {
-		VNodeHashs = append(VNodeHashs, VNodeHash{
-			(i + 1) * tmp,
-			make(chan query.Query, 10000),
-		})
+	for i = 0; i < csthash.VNodeNum; i++ {
+		ch := make(chan []string, 100)
+		VNodeCtls[i] = ch
+		go vnodeTask(i, csthash.VNodeHashs[i].Ch, ch)
 	}
 }
 
-func FindVNode(key string) chan query.Query {
-	b := md5.Sum([]byte(key))
-	h, _ := strconv.ParseUint(fmt.Sprintf("0x%x", b[:4]), 0, 0)
+func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
+	dups := make([]string, 0, DupNum)
+	dupMaster := -1
 
-	var i uint64
-	for i = 0; i < VNodeNum; i++ {
-		if h < VNodeHashs[i].Hash {
-			if i == 0 {
-				i = VNodeNum
+	for {
+		select {
+		case ctl := <-ctlChan:
+			if ctl[0] == "add" {
+				dups = append(dups, ctl[1])
+				if len(dups) == 1 {
+					dupMaster = 0
+				}
 			}
-			break
+			// TODO
+			_ = dupMaster
+			continue
+		case qry := <-qryChan:
+			// TODO
+			_ = qry
 		}
 	}
-
-	return VNodeHashs[i-1].Ch
 }
-
 
