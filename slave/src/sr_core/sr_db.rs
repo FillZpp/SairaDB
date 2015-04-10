@@ -21,7 +21,7 @@ extern crate serialize;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::ops::Drop;
 use self::serialize::json::Json;
@@ -42,13 +42,13 @@ struct Unit {
 struct Page {
     id: u64,
     size: AtomicUsize,
-    units: Arc<BTreeMap<String, Unit>>,
-    // read lock when change Unit in it , write lock when add/delete Unit
-    rwlock: RwLock<bool>  
+    units: Arc<BTreeMap<String, Arc<Unit>>>,
+    // lock when add/delete Unit
+    mtx: Mutex<bool>  
 }
 
 #[allow(dead_code)]
-struct SetContent {
+struct CollectionContent {
     key: String,
     size: AtomicUsize,
     page_id: AtomicUsize,
@@ -56,7 +56,7 @@ struct SetContent {
 }
 
 #[allow(dead_code)]
-struct Set {
+struct Collection {
     name: String,
     sender: Sender<Query>,
 }
@@ -65,7 +65,7 @@ struct Set {
 pub struct Database {
     name: String,
     sender: Sender<Query>,
-    sets: HashMap<String, Set>
+    collections: HashMap<String, Collection>
 }
 
 #[allow(dead_code)]
@@ -85,18 +85,18 @@ impl Page {
             id: id,
             size: ATOMIC_USIZE_INIT,
             units: Arc::new(BTreeMap::new()),
-            rwlock: RwLock::new(true)
+            mtx: Mutex::new(true)
         }
     }
 }
 
 #[allow(dead_code)]
-impl Set {
-    pub fn new(name: String, key: String, log_sender: Sender<String>) -> Set {
+impl Collection {
+    pub fn new(name: String, key: String, log_sender: Sender<String>) -> Collection {
         let mut vd = VecDeque::new();
         vd.push_front(Arc::new(Page::new(0)));
         let (tx, rx) = channel();
-        let set_cont = SetContent {
+        let collection_cont = CollectionContent {
             key: key,
             size: ATOMIC_USIZE_INIT,
             page_id: AtomicUsize::new(1),
@@ -104,10 +104,10 @@ impl Set {
         };
         
         thread::spawn(move || {
-            set_task(set_cont, rx, log_sender);
+            collection_task(collection_cont, rx, log_sender);
         });
     
-        Set {
+        Collection {
             name: name,
             sender: tx,
         }
@@ -122,7 +122,7 @@ struct PageThreadStatus {
 }
 
 #[allow(dead_code)]
-fn page_task(set_cont: Arc<SetContent>, receiver: Receiver<Query>,
+fn page_task(collection_cont: Arc<CollectionContent>, receiver: Receiver<Query>,
              task_num: Arc<AtomicUsize>, log_sender: Sender<String>) {
     loop {
         let qr = match receiver.recv() {
@@ -137,19 +137,19 @@ fn page_task(set_cont: Arc<SetContent>, receiver: Receiver<Query>,
 }
 
 #[allow(dead_code)]
-fn set_task(set_cont: SetContent, receiver: Receiver<Query>,
-            log_sender: Sender<String>) {
-    let set_cont = Arc::new(set_cont);
+fn collection_task(collection_cont: CollectionContent, receiver: Receiver<Query>,
+                   log_sender: Sender<String>) {
+    let collection_cont = Arc::new(collection_cont);
     let td_num = unsafe { super::td_num };
     let mut p_tasks = Vec::with_capacity(td_num as usize);
     for i in 0..td_num {
         let (tx, rx) = channel();
-        let set_cont = set_cont.clone();
+        let collection_cont = collection_cont.clone();
         let task_num = Arc::new(ATOMIC_USIZE_INIT);
         let task_num_clone = task_num.clone();
         let log_sender = log_sender.clone();
         thread::spawn(move || {
-            page_task(set_cont, rx, task_num_clone, log_sender);
+            page_task(collection_cont, rx, task_num_clone, log_sender);
         });
 
         p_tasks.push(PageThreadStatus {
@@ -165,7 +165,7 @@ fn set_task(set_cont: SetContent, receiver: Receiver<Query>,
             Ok(qr) => qr,
             Err(e) => {
                 let _ = log_sender.send(
-                    format!("slave core set_task receive error: {}", e));
+                    format!("slave core collection_task receive error: {}", e));
                 continue;
             }
         };

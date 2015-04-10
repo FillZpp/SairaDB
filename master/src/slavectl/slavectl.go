@@ -26,11 +26,14 @@ import (
 
 	"config"
 	"slog"
+	"query"
 )
 
 type Slave struct {
 	ip string
 	vnodes []uint64
+	
+	sendChan chan query.Query
 	sendStatus int32
 	recvStatus int32
 }

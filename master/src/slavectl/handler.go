@@ -26,6 +26,7 @@ import (
 
 	"slog"
 	"common"
+	"query"
 )
 
 func handlerLog(ip, reason string) {
@@ -53,6 +54,7 @@ func slaveHandler(conn net.Conn) {
 		slv = &Slave{
 			ip,
 			make([]uint64, 0),
+			make(chan query.Query, 10000),
 			0,
 			0,
 		}
@@ -92,6 +94,19 @@ func slaveHandler(conn net.Conn) {
 	handlerLog(ip, "connected")
 
 	time.Sleep(time.Hour)
+	if status == "send" {
+		sendSlave(conn)
+	} else {
+		recvSlave(conn)
+	}
+}
+
+func sendSlave(conn net.Conn) {
+	
+}
+
+func recvSlave(conn net.Conn) {
+	
 }
 
 
