@@ -36,9 +36,6 @@ var (
 	
 	Databases unsafe.Pointer  // map[string]int
 	DBEncode unsafe.Pointer
-	
-	Users unsafe.Pointer      // map[string]User
-	UserEncode unsafe.Pointer
 
 	ToClose = make(chan bool)
 	Closed = make(chan bool)
@@ -59,7 +56,6 @@ func Init() {
 	}
 
 	initDatabase()
-	initUser()
 	initTerm()
 
 	go closeTask()
@@ -69,11 +65,9 @@ func closeTask() {
 	<-ToClose
 
 	closeDB<- true
-	closeUser<- true
 	closeTerm<- true
 
 	<-dbClosed
-	<-userClosed
 	<-termClosed
 
 	Closed<- true

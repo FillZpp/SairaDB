@@ -28,16 +28,19 @@ import (
 
 var (
 	VNodeCtls []chan []string
+	VNodeDupNum []uint64
 	DupNum uint64
 )
 
 func vnodeInit() {
 	DupNum, _ = strconv.ParseUint(config.ConfMap["dup-num"], 0, 0)
 	VNodeCtls = make([]chan []string, csthash.VNodeNum)
+	VNodeDupNum = make([]uint64, csthash.VNodeNum)
 	var i uint64
 	for i = 0; i < csthash.VNodeNum; i++ {
 		ch := make(chan []string, 100)
 		VNodeCtls[i] = ch
+		VNodeDupNum[i] = 0
 		go vnodeTask(i, csthash.VNodeHashs[i].Ch, ch)
 	}
 }

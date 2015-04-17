@@ -32,11 +32,6 @@ import (
 	"common"
 )
 
-type Database struct {
-	Name string
-	Sets map[string]string  // name: key
-}
-
 type AlterDB struct {
 	Ch chan error
 	AlterType string
@@ -62,7 +57,7 @@ func initDatabase() {
 		os.Exit(3)
 	}
 
-	var databases map[string]Database
+	var databases map[string]int
 	bt := make([]byte, 10)
 	n, err := dbFile.Read(bt)
 	if err == nil && n > 0 {
@@ -78,11 +73,8 @@ func initDatabase() {
 	}
 	
 	if databases == nil {
-		databases = make(map[string]Database)
-		databases["default"] = Database {
-			"default",
-			make(map[string]string),
-		}
+		databases = make(map[string]int)
+		databases["default"] = 1
 	}
 	
 	Databases = unsafe.Pointer(&databases)
@@ -90,7 +82,7 @@ func initDatabase() {
 }
 
 func syncDBFile() {
-	b, _ := json.Marshal((*map[string]Database)(Databases))
+	b, _ := json.Marshal((*map[string]int)(Databases))
 	s := string(b)
 	atomic.StorePointer(&DBEncode, unsafe.Pointer(&s))
 	s2 := strconv.Itoa(len(s)) + ";" + s
@@ -101,7 +93,7 @@ func syncDBFile() {
 
 func alterDBTask() {
 	syncDBFile()
-	var tmp *map[string]Database
+	var tmp *map[string]int
 	var ad AlterDB
 	for {
 		if tmp == nil {
@@ -115,8 +107,8 @@ func alterDBTask() {
 				}
 			case ad = <-DBChan:
 			}
-			var copy map[string]Database
-			common.DeepCopy((*map[string]Database)(Databases), &copy)
+			var copy map[string]int
+			common.DeepCopy((*map[string]int)(Databases), &copy)
 			tmp = &copy
 			if !handleDBAlter(tmp, ad) {
 				tmp = nil
@@ -138,7 +130,7 @@ func alterDBTask() {
 	}
 }
 
-func handleDBAlter(dbs *map[string]Database, ad AlterDB) bool {
+func handleDBAlter(dbs *map[string]int, ad AlterDB) bool {
 	switch ad.AlterType {
 	case "add_db":
 		_, ok := (*dbs)[ad.AlterCont[0]]
@@ -146,10 +138,7 @@ func handleDBAlter(dbs *map[string]Database, ad AlterDB) bool {
 			ad.Ch<- errors.New("The database already exists.")
 			return false
 		}
-		(*dbs)[ad.AlterCont[0]] = Database {
-			ad.AlterCont[0],
-			make(map[string]string),
-		}
+		(*dbs)[ad.AlterCont[0]] = 1
 		// TODO
 		
 	default:

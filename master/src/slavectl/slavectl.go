@@ -29,11 +29,17 @@ import (
 	"query"
 )
 
+type RecvRegister struct {
+	id string
+	ch chan string
+}
+
 type Slave struct {
 	ip string
 	vnodes []uint64
 	
 	sendChan chan query.Query
+	recvChan chan RecvRegister
 	sendStatus int32
 	recvStatus int32
 }

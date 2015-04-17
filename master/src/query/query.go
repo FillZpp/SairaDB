@@ -19,6 +19,16 @@
 package query
 
 type Query struct {
+	Id string
+	Cli CliQuery
+	ResChan chan string
+}
 
+type CliQuery struct {
+	Operation string
+	Name string
+	Attributes []string
+	Data []string
+	Conditions []map[string]string
 }
 

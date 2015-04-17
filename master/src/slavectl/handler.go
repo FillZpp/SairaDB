@@ -27,6 +27,7 @@ import (
 	"slog"
 	"common"
 	"query"
+	//"csthash"
 )
 
 func handlerLog(ip, reason string) {
@@ -55,6 +56,7 @@ func slaveHandler(conn net.Conn) {
 			ip,
 			make([]uint64, 0),
 			make(chan query.Query, 10000),
+			make(chan RecvRegister, 10000),
 			0,
 			0,
 		}
@@ -95,17 +97,18 @@ func slaveHandler(conn net.Conn) {
 
 	time.Sleep(time.Hour)
 	if status == "send" {
-		sendSlave(conn)
+		sendSlave(conn, slv.sendChan, slv.recvChan)
 	} else {
-		recvSlave(conn)
+		recvSlave(conn, slv.recvChan)
 	}
 }
 
-func sendSlave(conn net.Conn) {
+func sendSlave(conn net.Conn, sendChan chan query.Query,
+	recvChan chan RecvRegister) {
 	
 }
 
-func recvSlave(conn net.Conn) {
+func recvSlave(conn net.Conn, recvChan chan RecvRegister) {
 	
 }
 
