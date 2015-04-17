@@ -48,24 +48,16 @@ struct Page {
 }
 
 #[allow(dead_code)]
-struct CollectionContent {
-    key: String,
+struct DBContent {
     size: AtomicUsize,
-    page_id: AtomicUsize,
+    cur_id: AtomicUsize,
     pages: VecDeque<Arc<Page>>,
-}
-
-#[allow(dead_code)]
-struct Collection {
-    name: String,
-    sender: Sender<Query>,
 }
 
 #[allow(dead_code)]
 pub struct Database {
     name: String,
     sender: Sender<Query>,
-    collections: HashMap<String, Collection>
 }
 
 #[allow(dead_code)]
@@ -91,26 +83,31 @@ impl Page {
 }
 
 #[allow(dead_code)]
-impl Collection {
-    pub fn new(name: String, key: String, log_sender: Sender<String>) -> Collection {
+impl Database {
+    pub fn new(name: String, log_sender: Sender<String>) -> Database {
         let mut vd = VecDeque::new();
         vd.push_front(Arc::new(Page::new(0)));
+        
         let (tx, rx) = channel();
-        let collection_cont = CollectionContent {
-            key: key,
+        let db_cont = DBContent {
             size: ATOMIC_USIZE_INIT,
-            page_id: AtomicUsize::new(1),
+            cur_id: AtomicUsize::new(1),
             pages: vd,
         };
         
         thread::spawn(move || {
-            collection_task(collection_cont, rx, log_sender);
+            db_task(db_cont, rx, log_sender);
         });
     
-        Collection {
+        Database {
             name: name,
             sender: tx,
         }
+    }
+}
+
+impl Drop for Database {
+    fn drop(&mut self) {
     }
 }
 
@@ -122,7 +119,7 @@ struct PageThreadStatus {
 }
 
 #[allow(dead_code)]
-fn page_task(collection_cont: Arc<CollectionContent>, receiver: Receiver<Query>,
+fn page_task(db_cont: Arc<DBContent>, receiver: Receiver<Query>,
              task_num: Arc<AtomicUsize>, log_sender: Sender<String>) {
     loop {
         let qr = match receiver.recv() {
@@ -137,19 +134,19 @@ fn page_task(collection_cont: Arc<CollectionContent>, receiver: Receiver<Query>,
 }
 
 #[allow(dead_code)]
-fn collection_task(collection_cont: CollectionContent, receiver: Receiver<Query>,
-                   log_sender: Sender<String>) {
-    let collection_cont = Arc::new(collection_cont);
+fn db_task(db_cont: DBContent, receiver: Receiver<Query>,
+           log_sender: Sender<String>) {
+    let db_cont = Arc::new(db_cont);
     let td_num = unsafe { super::td_num };
     let mut p_tasks = Vec::with_capacity(td_num as usize);
     for i in 0..td_num {
         let (tx, rx) = channel();
-        let collection_cont = collection_cont.clone();
+        let db_cont = db_cont.clone();
         let task_num = Arc::new(ATOMIC_USIZE_INIT);
         let task_num_clone = task_num.clone();
         let log_sender = log_sender.clone();
         thread::spawn(move || {
-            page_task(collection_cont, rx, task_num_clone, log_sender);
+            page_task(db_cont, rx, task_num_clone, log_sender);
         });
 
         p_tasks.push(PageThreadStatus {
@@ -165,7 +162,7 @@ fn collection_task(collection_cont: CollectionContent, receiver: Receiver<Query>
             Ok(qr) => qr,
             Err(e) => {
                 let _ = log_sender.send(
-                    format!("slave core collection_task receive error: {}", e));
+                    format!("slave core db_task receive error: {}", e));
                 continue;
             }
         };
