@@ -16,35 +16,25 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-#![feature(libc)]
-
-extern crate libc;
-
-mod sr_args;
-mod sr_readline;
-mod sr_query;
-mod sr_conn;
-
-use std::net::TcpStream;
-use std::io::{stdout, stderr, Write};
-
-
-fn main() {
-    let flag_map = sr_args::get_flags();
-
-    let stream = {
-        let addr: &str = flag_map.get("addr").unwrap();
-        match TcpStream::connect(addr) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = writeln!(stderr(), "Error: Can not connect to {}\n{}",
-                                 addr, e);
-                unsafe { libc::exit(4); }
-            }
-        }
-    };
-    
-    let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
-    sr_conn::start_repl(stream, flag_map);
+pub struct Query {
+    operation: String,
+    name: String,
+    attributes: Vec<String>,
+    data: Vec<String>,
+    conditions: Vec<String>,
 }
+
+impl Query {
+    pub fn new(op: String, name: String, attrs: Vec<String>,
+               data: Vec<String>, conds: Vec<String>) -> Query {
+        Query {
+            operation: op,
+            name: name,
+            attributes: attrs,
+            data: data,
+            conditions: conds,
+        }
+    }
+}
+
 

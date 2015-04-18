@@ -16,35 +16,37 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-#![feature(libc)]
-
 extern crate libc;
 
-mod sr_args;
-mod sr_readline;
-mod sr_query;
-mod sr_conn;
-
 use std::net::TcpStream;
-use std::io::{stdout, stderr, Write};
+use std::collections::HashMap;
+use std::io::{stderr, Write, Read};
 
 
-fn main() {
-    let flag_map = sr_args::get_flags();
-
-    let stream = {
-        let addr: &str = flag_map.get("addr").unwrap();
-        match TcpStream::connect(addr) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = writeln!(stderr(), "Error: Can not connect to {}\n{}",
-                                 addr, e);
-                unsafe { libc::exit(4); }
-            }
+fn write(stream: &mut TcpStream, msg: &String) {
+    match stream.write_all(msg.as_bytes()) {
+        Ok(_) => {}
+        Err(e) => {
+            let _ = writeln!(stderr(), "Error: {}", e);
+            unsafe { libc::exit(4); }
         }
-    };
+    }
+}
+
+fn read(stream: &mut TcpStream) -> String {
+    let mut buf = "".to_string();
+    match stream.read_to_string(&mut buf) {
+        Ok(_) => {}
+        Err(e) => {
+            let _ = writeln!(stderr(), "Error: {}", e);
+            unsafe { libc::exit(4); }
+        }
+    }
+    buf
+}
+
+pub fn start_repl(mut stream: TcpStream, flag_map: HashMap<String, String>) {
+    write(&mut stream, flag_map.get("cookie").unwrap());
     
-    let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
-    sr_conn::start_repl(stream, flag_map);
 }
 

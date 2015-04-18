@@ -45,7 +45,7 @@ pub fn read_line() -> Option<String> {
         read_line_unix("saira> ")
     } else {
         let mut s = "".to_string();
-        print!("saira>");
+        print!("saira> ");
         match stdin().read_line(&mut s) {
             Ok(_) => {
                 s.pop();  // pop '\n'

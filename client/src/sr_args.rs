@@ -61,14 +61,17 @@ pub fn get_flags() -> HashMap<String, String> {
         cal.result_str().to_string()
     });
 
-    flag_map.insert("ip".to_string(), match matches.opt_str("ip") {
+    let ip = match matches.opt_str("ip") {
         Some(a) => a,
         None => "127.0.0.1".to_string()
-    });
+    };
 
-    flag_map.insert("port".to_string(), match matches.opt_str("port") {
-        Some(a) => a,
-        None => "4400".to_string()
+    flag_map.insert("addr".to_string(), {
+        let port = match matches.opt_str("port") {
+            Some(a) => a,
+            None => "4400".to_string()
+        };
+        ip + ":" + &port
     });
 
     flag_map
