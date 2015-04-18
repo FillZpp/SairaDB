@@ -29,6 +29,6 @@ type CliQuery struct {
 	Name string
 	Attributes []string
 	Data []string
-	Conditions []map[string]string
+	Conditions []string
 }
 
