@@ -17,34 +17,17 @@
 
 
 #![feature(libc)]
+#![feature(rustc_private)]
 
 extern crate libc;
 
-mod sr_args;
-mod sr_readline;
-mod sr_query;
-mod sr_conn;
-
-use std::net::TcpStream;
-use std::io::{stdout, stderr, Write};
+mod args;
+mod readline;
+mod query;
+mod conn;
 
 
 fn main() {
-    let flag_map = sr_args::get_flags();
-
-    let stream = {
-        let addr: &str = flag_map.get("addr").unwrap();
-        match TcpStream::connect(addr) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = writeln!(stderr(), "Error: Can not connect to {}\n{}",
-                                 addr, e);
-                unsafe { libc::exit(4); }
-            }
-        }
-    };
-    
-    let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
-    sr_conn::start_repl(stream, flag_map);
+    conn::start_repl(args::get_flags());
 }
 
