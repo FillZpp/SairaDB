@@ -7,4 +7,5 @@ authors = ["Siyu Wang <FillZpp.pub@gmail.com>"]
 [dependencies]
 getopts = "*"
 rust-crypto = "*"
+rustc-serialize = "*"
 

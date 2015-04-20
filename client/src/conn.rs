@@ -16,16 +16,16 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-extern crate libc;
-extern crate serialize;
-
 use std::net::TcpStream;
 use std::collections::HashMap;
 use std::io::{stdout, stderr, Write, Read};
-use self::serialize::json;
+use super::libc;
+use super::rustc_serialize::*;
+use super::readline;
+use super::query::Query;
 
 
-fn write(stream: &mut TcpStream, msg: &String) {
+fn do_write(stream: &mut TcpStream, msg: &String) {
     match stream.write_all(msg.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
@@ -35,16 +35,35 @@ fn write(stream: &mut TcpStream, msg: &String) {
     }
 }
 
-fn read(stream: &mut TcpStream) -> String {
-    let mut buf = "".to_string();
-    match stream.read_to_string(&mut buf) {
-        Ok(_) => {}
+fn do_read(stream: &mut TcpStream) -> String {
+    let mut buf = [0u8; 32];
+    let n = match stream.read(&mut buf) {
+        Ok(n) => n,
         Err(e) => {
             let _ = writeln!(stderr(), "Error: {}", e);
             unsafe { libc::exit(4); }
         }
+    };
+    String::from_utf8_lossy(&buf[0..n]).into_owned()
+}
+
+fn read_line() -> String {
+    match readline::read_line() {
+        Some(s) => s,
+        None => {
+            unsafe { libc::exit(0); }
+        }
     }
-    buf
+}
+
+fn do_encode<T: Encodable>(object: &T) -> String {
+    match json::encode(object) {
+        Ok(s) => s,
+        Err(_) => {
+            let _ = writeln!(stderr(), "Error: json encode error");
+            unsafe { libc::exit(0); }
+        }
+    }
 }
 
 pub fn start_repl(flag_map: HashMap<String, String>) {
@@ -63,8 +82,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
             }
         };
         
-        write(&mut stream, flag_map.get("cookie").unwrap());
-        let msg: Vec<String> = match json::decode(&read(&mut stream)) {
+        do_write(&mut stream, flag_map.get("cookie").unwrap());
+        let msg: Vec<String> = match json::decode(&do_read(&mut stream)) {
             Ok(m) => m,
             Err(e) => {
                 let _ = writeln!(stderr(), "Error: json parsing error\n{}", e);
@@ -90,5 +109,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
     }
 
     let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
+    loop {
+        let line = read_line();
+    }
 }
 

@@ -17,9 +17,10 @@
 
 
 #![feature(libc)]
-#![feature(rustc_private)]
+//#![feature(std_misc)]
 
 extern crate libc;
+extern crate rustc_serialize;
 
 mod args;
 mod readline;
