@@ -16,6 +16,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+pub enum Operations {
+    None,
+    Select(Option<Vec<String>>, Option<Vec<String>>),
+    Insert(Vec<String>),
+    Update(Option<Vec<String>>, Option<Vec<String>>),
+    Delete(Option<Vec<String>>, Option<Vec<String>>)
+}
+
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Query {
     operation: String,

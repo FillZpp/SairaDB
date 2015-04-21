@@ -22,7 +22,7 @@ use std::io::{stdout, stderr, Write, Read};
 use super::libc;
 use super::rustc_serialize::*;
 use super::readline;
-use super::query::Query;
+use super::query::{Operations, Query};
 
 
 fn do_write(stream: &mut TcpStream, msg: &String) {
@@ -109,8 +109,33 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
     }
 
     let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
+
+    let mut operation = Operations::None;
     loop {
-        let line = read_line();
+        let mut line;
+        loop {
+            line = read_line();
+            if line != "".to_string() {
+                break;
+            }
+        }
+
+        match &mut operation {
+            &mut Operations::None => {
+            }
+
+            &mut Operations::Select(ref mut attrs, ref mut conds) => {
+            }
+
+            &mut Operations::Insert(ref mut data) => {
+            }
+
+            &mut Operations::Update(ref mut data, ref mut conds) => {
+            }
+
+            &mut Operations::Delete(ref mut data, ref mut conds) => {
+            }
+        }
     }
 }
 
