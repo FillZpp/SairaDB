@@ -6,12 +6,12 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 //
-//This program is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-//You should have received a copy of the GNU General Public License
+// You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
@@ -64,6 +64,22 @@ fn do_encode<T: Encodable>(object: &T) -> String {
             unsafe { libc::exit(0); }
         }
     }
+}
+
+fn print_help() {
+    println!("\nHelp:");
+    println!("\"help\" to print commands");
+    println!("\"quit\" to exit");
+    println!("");
+    println!("\"show dbs\"                           print a list of databases");
+    println!("\"create db <db_name> key <key_name>\" create new database");
+    println!("\"drop db <db_name>\"                  drop an exist database");
+    println!("\"use <db_name>\"                      focus on an exist database");
+    println!("");
+    println!("\"select <attributes> <conditions>\"");
+    println!("\"insert <data>\"");
+    println!("\"update <data> <conditions>\"");
+    println!("\"delete <attributes> <conditions>\"\n");
 }
 
 pub fn start_repl(flag_map: HashMap<String, String>) {
@@ -122,6 +138,19 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
         match &mut operation {
             &mut Operations::None => {
+                let mut words = line.trim().splitn(2, " ");
+                let cmd = words.next().unwrap();
+
+                match cmd {
+                    "quit" => break,
+                    "help" => print_help(),
+                    
+                    other => {
+                        let _ = writeln!(stderr(), "Error: unknown command '{}'",
+                                         other);
+                        continue;
+                    }
+                }
             }
 
             &mut Operations::Select(ref mut attrs, ref mut conds) => {
@@ -135,6 +164,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
             &mut Operations::Delete(ref mut data, ref mut conds) => {
             }
+
+            _ => {}
         }
     }
 }
