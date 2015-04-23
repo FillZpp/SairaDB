@@ -20,14 +20,14 @@ pub enum Operations {
     None,
 
     ShowDBs,
-    CreateDB(String, String),
-    DropDB(String),
+    Create(String),
+    Drop(String),
     Use(String),
     
-    Select(Option<Vec<String>>, Option<Vec<String>>),
-    Insert(Vec<String>),
-    Update(Option<Vec<String>>, Option<Vec<String>>),
-    Delete(Option<Vec<String>>, Option<Vec<String>>)
+    Get(String, Vec<String>),
+    Set(String, String),
+    Add(String, String),
+    Del(String, Vec<String>)
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
@@ -35,8 +35,7 @@ pub struct Query {
     operation: String,
     name: String,
     attributes: Vec<String>,
-    data: Vec<String>,
-    conditions: Vec<String>,
+    data: String
 }
 
 impl Query {
@@ -47,8 +46,7 @@ impl Query {
                     operation: "none".to_string(),
                     name: "".to_string(),
                     attributes: Vec::new(),
-                    data: Vec::new(),
-                    conditions: Vec::new(),
+                    data: "".to_string(),
                 },
 
             Operations::ShowDBs =>
@@ -56,26 +54,23 @@ impl Query {
                     operation: "show_dbs".to_string(),
                     name: "".to_string(),
                     attributes: Vec::new(),
-                    data: Vec::new(),
-                    conditions: Vec::new(),
+                    data: "".to_string(),
                 },
 
-            Operations::CreateDB(name, key) =>
+            Operations::Create(name) =>
                 Query {
-                    operation: "create_db".to_string(),
-                    name: name,
-                    attributes: vec![key],
-                    data: Vec::new(),
-                    conditions: Vec::new(),
-                },
-
-            Operations::DropDB(name) =>
-                Query {
-                    operation: "drop_db".to_string(),
+                    operation: "create".to_string(),
                     name: name,
                     attributes: Vec::new(),
-                    data: Vec::new(),
-                    conditions: Vec::new(),
+                    data: "".to_string(),
+                },
+
+            Operations::Drop(name) =>
+                Query {
+                    operation: "drop".to_string(),
+                    name: name,
+                    attributes: Vec::new(),
+                    data: "".to_string(),
                 },
 
             Operations::Use(name) =>
@@ -83,78 +78,40 @@ impl Query {
                     operation: "use".to_string(),
                     name: name,
                     attributes: Vec::new(),
-                    data: Vec::new(),
-                    conditions: Vec::new(),
+                    data: "".to_string(),
                 },
 
-            Operations::Select(attrs, conds) => {
-                let attrs = match attrs {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-
-                let conds = match conds {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-                
+            Operations::Get(key, attrs) =>
                 Query {
-                    operation: "select".to_string(),
-                    name: "".to_string(),
+                    operation: "get".to_string(),
+                    name: key,
                     attributes: attrs,
-                    data: Vec::new(),
-                    conditions: conds,
-                }
-            }
-
-            Operations::Insert(data) =>
-                Query {
-                    operation: "insert".to_string(),
-                    name: "".to_string(),
-                    attributes: Vec::new(),
-                    data: data,
-                    conditions: Vec::new(),
+                    data: "".to_string()
                 },
 
-            Operations::Update(data, conds) => {
-                let data = match data {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-
-                let conds = match conds {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-                
+            Operations::Set(key, data) =>
                 Query {
-                    operation: "update".to_string(),
-                    name: "".to_string(),
+                    operation: "set".to_string(),
+                    name: key,
                     attributes: Vec::new(),
-                    data: data,
-                    conditions: conds,
-                }
-            }
+                    data: data
+                },
 
-            Operations::Delete(attrs, conds) => {
-                let attrs = match attrs {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-
-                let conds = match conds {
-                    None => Vec::new(),
-                    Some(a) => a
-                };
-                
+            Operations::Add(key, data) =>
                 Query {
-                    operation: "delete".to_string(),
-                    name: "".to_string(),
+                    operation: "add".to_string(),
+                    name: key,
+                    attributes: Vec::new(),
+                    data: data
+                },
+
+            Operations::Del(key, attrs) =>
+                Query {
+                    operation: "get".to_string(),
+                    name: key,
                     attributes: attrs,
-                    data: Vec::new(),
-                    conditions: conds,
-                }
-            }
+                    data: "".to_string()
+                },
         }
     }
 }

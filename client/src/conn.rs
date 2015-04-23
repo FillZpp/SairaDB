@@ -174,36 +174,12 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     }
 
                     "create" => {
-                        let mut check = false;
-                        let mut words = match words.next() {
-                            Some(ws) => ws.words(),
+                        let name = match words.next() {
+                            Some(n) => n.to_string(),
                             None => continue
                         };
-                        let mut name = "".to_string();
-                        let mut key = "".to_string();
-
-                        match words.next() {
-                            Some(n) => {
-                                name = n.to_string();
-                                if Some("key") == words.next() {
-                                    match words.next() {
-                                        Some(k) => {
-                                            key = k.to_string();
-                                            check = true;
-                                        }
-                                        None => {}
-                                    }
-                                }
-                            }
-                            None => {}
-                        }
-
-                        if !check {
-                            println!("Error: wrong command. Type 'help' to get a help list.");
-                            continue;
-                        }
                         
-                        let qry = Query::new(Operations::CreateDB(name, key));
+                        let qry = Query::new(Operations::Create(name));
                         do_write(&mut stream, &do_encode(&qry));
                         let res = do_read(&mut stream);
                         println!("{}", res);
@@ -215,7 +191,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                             None => continue
                         };
 
-                        let qry = Query::new(Operations::DropDB(name));
+                        let qry = Query::new(Operations::Drop(name));
                         do_write(&mut stream, &do_encode(&qry));
                         let res = do_read(&mut stream);
                         println!("{}", res);
@@ -232,21 +208,25 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                         let res = do_read(&mut stream);
                         println!("{}", res);
                     }
+
+                    "select" => {
+                        
+                    }
                         
                     other => println!("Error: unknown command '{}'", other),
                 } // match cmd
             }
 
-            &mut Operations::Select(ref mut attrs, ref mut conds) => {
+            &mut Operations::Get(_, ref mut attrs) => {
             }
 
-            &mut Operations::Insert(ref mut data) => {
+            &mut Operations::Set(_, ref mut data) => {
             }
 
-            &mut Operations::Update(ref mut data, ref mut conds) => {
+            &mut Operations::Add(_, ref mut data) => {
             }
 
-            &mut Operations::Delete(ref mut data, ref mut conds) => {
+            &mut Operations::Del(_, ref mut attrs) => {
             }
 
             _ => {}
