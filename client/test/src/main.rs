@@ -37,10 +37,19 @@ fn handler(mut stream: TcpStream) {
             }
         };
 
-        if qry.operation == "quit".to_string() {
-            break;
+        match qry.operation.as_ref() {
+            "quit" => break,
+
+            "show_dbs" => {
+                let dbs = vec!["default", "test"];
+                let _ = stream.write_all(json::encode(&dbs).unwrap().as_bytes());
+            }
+
+            _ => {
+                let _ = stream.write_all(b"ok");
+            }
         }
-        let _ = stream.write_all(b"ok");
+
     }
     let _ = stream.shutdown(Shutdown::Both);
     println!("end");

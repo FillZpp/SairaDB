@@ -18,7 +18,7 @@
 
 use std::net::TcpStream;
 use std::collections::HashMap;
-use std::io::{stdout, stderr, Write, Read};
+use std::io::{stderr, Write, Read};
 use super::libc;
 use super::rustc_serialize::*;
 use super::readline;
@@ -60,8 +60,18 @@ fn do_encode<T: Encodable>(object: &T) -> String {
     match json::encode(object) {
         Ok(s) => s,
         Err(_) => {
-            let _ = writeln!(stderr(), "Error: json encode error");
-            unsafe { libc::exit(0); }
+            let _ = writeln!(stderr(), "Error: json encode error.");
+            unsafe { libc::exit(4); }
+        }
+    }
+}
+
+fn do_decode<T: Decodable>(s: &str) -> T {
+    match json::decode(s) {
+        Ok(t) => t,
+        Err(_) => {
+            let _ = writeln!(stderr(), "Error: json decode error.");
+            unsafe { libc::exit(4); }
         }
     }
 }
@@ -72,8 +82,8 @@ fn print_help() {
     println!("\"quit\" to exit");
     println!("");
     println!("\"show dbs\"                           print a list of databases");
-    println!("\"create db <db_name> key <key_name>\" create new database");
-    println!("\"drop db <db_name>\"                  drop an exist database");
+    println!("\"create <db_name> key <key_name>\" create new database");
+    println!("\"drop <db_name>\"                  drop an exist database");
     println!("\"use <db_name>\"                      focus on an exist database");
     println!("");
     println!("\"select <attributes> <conditions>\"");
@@ -99,14 +109,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
         };
         
         do_write(&mut stream, flag_map.get("cookie").unwrap());
-        let msg: Vec<String> = match json::decode(&do_read(&mut stream)) {
-            Ok(m) => m,
-            Err(e) => {
-                let _ = writeln!(stderr(), "Error: json parsing error\n{}", e);
-                unsafe { libc::exit(4); }
-            }
-        };
-
+        let msg: Vec<String> = do_decode(&do_read(&mut stream));
         if msg.len() == 1 {
             if msg[0] == "ok".to_string() {
                 break;
@@ -124,7 +127,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
         
     }
 
-    let _ = writeln!(stdout(), "SairaDB Client {}", env!("CARGO_PKG_VERSION"));
+    println!("SairaDB Client {}", env!("CARGO_PKG_VERSION"));
 
     let mut operation = Operations::None;
     loop {
@@ -144,13 +147,94 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 match cmd {
                     "quit" => break,
                     "help" => print_help(),
-                    
-                    other => {
-                        let _ = writeln!(stderr(), "Error: unknown command '{}'",
-                                         other);
-                        continue;
+
+                    "show" => {
+                        let mut check = false;
+                        match words.next() {
+                            Some(sec) => {
+                                if sec.trim() == "dbs" {
+                                    check = true;
+                                }
+                            }
+                            
+                            None => {}
+                        }
+
+                        if !check {
+                            println!("Error: wrong command. Type 'help' to get a help list.");
+                            continue;
+                        }
+
+                        let qry = Query::new(Operations::ShowDBs);
+                        do_write(&mut stream, &do_encode(&qry));
+                        let dbs: Vec<String> = do_decode(&do_read(&mut stream));
+                        for db in dbs {
+                            println!("{}", db);
+                        }
                     }
-                }
+
+                    "create" => {
+                        let mut check = false;
+                        let mut words = match words.next() {
+                            Some(ws) => ws.words(),
+                            None => continue
+                        };
+                        let mut name = "".to_string();
+                        let mut key = "".to_string();
+
+                        match words.next() {
+                            Some(n) => {
+                                name = n.to_string();
+                                if Some("key") == words.next() {
+                                    match words.next() {
+                                        Some(k) => {
+                                            key = k.to_string();
+                                            check = true;
+                                        }
+                                        None => {}
+                                    }
+                                }
+                            }
+                            None => {}
+                        }
+
+                        if !check {
+                            println!("Error: wrong command. Type 'help' to get a help list.");
+                            continue;
+                        }
+                        
+                        let qry = Query::new(Operations::CreateDB(name, key));
+                        do_write(&mut stream, &do_encode(&qry));
+                        let res = do_read(&mut stream);
+                        println!("{}", res);
+                    }
+
+                    "drop" => {
+                        let name = match words.next() {
+                            Some(n) => n.to_string(),
+                            None => continue
+                        };
+
+                        let qry = Query::new(Operations::DropDB(name));
+                        do_write(&mut stream, &do_encode(&qry));
+                        let res = do_read(&mut stream);
+                        println!("{}", res);
+                    }
+
+                    "use" => {
+                        let name = match words.next() {
+                            Some(n) => n.to_string(),
+                            None => continue
+                        };
+
+                        let qry = Query::new(Operations::Use(name));
+                        do_write(&mut stream, &do_encode(&qry));
+                        let res = do_read(&mut stream);
+                        println!("{}", res);
+                    }
+                        
+                    other => println!("Error: unknown command '{}'", other),
+                } // match cmd
             }
 
             &mut Operations::Select(ref mut attrs, ref mut conds) => {

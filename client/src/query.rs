@@ -19,9 +19,8 @@
 pub enum Operations {
     None,
 
-    Help,
     ShowDBs,
-    CreateDB(String),
+    CreateDB(String, String),
     DropDB(String),
     Use(String),
     
@@ -52,15 +51,6 @@ impl Query {
                     conditions: Vec::new(),
                 },
 
-            Operations::Help =>
-                Query {
-                    operation: "help".to_string(),
-                    name: "".to_string(),
-                    attributes: Vec::new(),
-                    data: Vec::new(),
-                    conditions: Vec::new(),
-                },
-
             Operations::ShowDBs =>
                 Query {
                     operation: "show_dbs".to_string(),
@@ -70,11 +60,11 @@ impl Query {
                     conditions: Vec::new(),
                 },
 
-            Operations::CreateDB(name) =>
+            Operations::CreateDB(name, key) =>
                 Query {
                     operation: "create_db".to_string(),
                     name: name,
-                    attributes: Vec::new(),
+                    attributes: vec![key],
                     data: Vec::new(),
                     conditions: Vec::new(),
                 },

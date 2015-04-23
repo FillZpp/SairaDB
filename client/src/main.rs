@@ -17,6 +17,7 @@
 
 
 #![feature(libc)]
+#![feature(str_words)]
 //#![feature(std_misc)]
 
 extern crate libc;
