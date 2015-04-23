@@ -81,15 +81,15 @@ fn print_help() {
     println!("\"help\" to print commands");
     println!("\"quit\" to exit");
     println!("");
-    println!("\"show dbs\"                           print a list of databases");
-    println!("\"create <db_name> key <key_name>\" create new database");
-    println!("\"drop <db_name>\"                  drop an exist database");
-    println!("\"use <db_name>\"                      focus on an exist database");
+    println!("\"show dbs\"         print a list of databases");
+    println!("\"create <db_name>\" create new database");
+    println!("\"drop <db_name>\"   drop an exist database");
+    println!("\"use <db_name>\"    focus on an exist database");
     println!("");
-    println!("\"select <attributes> <conditions>\"");
-    println!("\"insert <data>\"");
-    println!("\"update <data> <conditions>\"");
-    println!("\"delete <attributes> <conditions>\"\n");
+    println!("\"get <key> [attributes]\"");
+    println!("\"set <key> <json>\"");
+    println!("\"add <key> <json>\"");
+    println!("\"del <key> [attributes]\"\n");
 }
 
 pub fn start_repl(flag_map: HashMap<String, String>) {
@@ -209,7 +209,15 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                         println!("{}", res);
                     }
 
-                    "select" => {
+                    "get" => {
+                        let rests = match words.next() {
+                            Some(r) => r.trim(),
+                            None => {
+                                println!("Error: get what? Type 'help' to get a help list.");
+                                continue;
+                            }
+                        }.splitn(2, " ");
+
                         
                     }
                         
