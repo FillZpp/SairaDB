@@ -12,8 +12,7 @@ struct Query {
     operation: String,
     name: String,
     attributes: Vec<String>,
-    data: Vec<String>,
-    conditions: Vec<String>
+    data: String,
 }
 
 fn handler(mut stream: TcpStream) {

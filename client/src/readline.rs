@@ -40,12 +40,12 @@ fn read_line_unix(prompt: &str) -> Option<String> {
     }
 }
 
-pub fn read_line() -> Option<String> {
+pub fn read_line(prompt: &str) -> Option<String> {
     if cfg!(unix) {
-        read_line_unix("saira> ")
+        read_line_unix(prompt)
     } else {
         let mut s = "".to_string();
-        print!("saira> ");
+        print!("{}", prompt);
         match stdin().read_line(&mut s) {
             Ok(_) => {
                 s.pop();  // pop '\n'

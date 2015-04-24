@@ -15,14 +15,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+extern crate rustc_unicode;
 
 use std::net::TcpStream;
 use std::collections::HashMap;
 use std::io::{stderr, Write, Read};
+use self::rustc_unicode::str::UnicodeStr;
 use super::libc;
 use super::rustc_serialize::*;
 use super::readline;
-use super::query::{Operations, Query};
+use super::query::*;
 
 
 fn do_write(stream: &mut TcpStream, msg: &String) {
@@ -47,8 +49,8 @@ fn do_read(stream: &mut TcpStream) -> String {
     String::from_utf8_lossy(&buf[0..n]).into_owned()
 }
 
-fn read_line() -> String {
-    match readline::read_line() {
+fn read_line(prompt: &str) -> String {
+    match readline::read_line(prompt) {
         Some(s) => s,
         None => {
             unsafe { libc::exit(0); }
@@ -131,16 +133,23 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
     let mut operation = Operations::None;
     loop {
-        let mut line;
-        loop {
-            line = read_line();
-            if line != "".to_string() {
-                break;
+        let mut line = "".to_string();
+        match &operation {
+            &Operations::Get(_, State::Done(_)) => {}
+            &Operations::Del(_, State::Done(_)) => {}
+            _ => loop {
+                line = match operation {
+                    Operations::None => read_line("saira >> "),
+                    _ => read_line("saira *> ")
+                };
+                if line != "".to_string() {
+                    break;
+                }
             }
         }
 
-        match &mut operation {
-            &mut Operations::None => {
+        match operation {
+            Operations::None => {
                 let mut words = line.trim().splitn(2, " ");
                 let cmd = words.next().unwrap();
 
@@ -161,7 +170,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                         }
 
                         if !check {
-                            println!("Error: wrong command. Type 'help' to get a help list.");
+                            println!("(error) wrong use of command.");
+                            println!("Type 'help' to get a help list.");
                             continue;
                         }
 
@@ -210,31 +220,259 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     }
 
                     "get" => {
-                        let rests = match words.next() {
+                        let mut rests = match words.next() {
                             Some(r) => r.trim(),
                             None => {
-                                println!("Error: get what? Type 'help' to get a help list.");
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
                                 continue;
                             }
                         }.splitn(2, " ");
 
-                        
+                        let key = match rests.next() {
+                            Some(k) => k.to_string(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+
+                        operation = Operations::Get(key, {
+                            if let Some(rest) = rests.next() {
+                                let mut attrs = Vec::new();
+                                let rest = rest.trim();
+
+                                if !rest.starts_with("(") {
+                                    println!("(error) wrong use of command.");
+                                    println!("Type 'help' to get a help list.");
+                                    continue;
+                                }
+                                
+                                let words: Vec<&str> = rest[1..].split(',')
+                                    .collect();
+                                let mut check = true;
+                                for i in 0..(words.len()-1) {
+                                    let s = words[i].trim();
+                                    if s == "" || !s.is_alphanumeric() {
+                                        println!("(error) wrong use of command.");
+                                        println!("Type 'help' to get a help list.");
+                                        check = false;
+                                        break;
+                                    }
+                                    attrs.push(s.to_string());
+                                }
+                                if !check {
+                                    continue;
+                                }
+
+                                let last = words[words.len() - 1];
+                                if last == "" {
+                                    State::Half(attrs)
+                                } else if last.ends_with(")") {
+                                    let s = &last[..(last.len() - 1)].trim();
+                                    if !s.is_alphanumeric() {
+                                        println!("(error) wrong use of command.");
+                                        println!("Type 'help' to get a help list.");
+                                        continue;
+                                    }
+                                    if s != &"" {
+                                        attrs.push(s.to_string());
+                                    }
+                                    State::Done(attrs)
+                                } else {
+                                    println!("(error) parsing error.");
+                                    println!("Type 'help' to get a help list.");
+                                    continue;
+                                }
+                            } else {
+                                State::Done(Vec::new())
+                            }
+                        });
+                    }
+
+                    "del" => {
+                        let mut rests = match words.next() {
+                            Some(r) => r.trim(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        }.splitn(2, " ");
+
+                        let key = match rests.next() {
+                            Some(k) => k.to_string(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+
+                        operation = Operations::Del(key, {
+                            if let Some(rest) = rests.next() {
+                                let mut attrs = Vec::new();
+                                let rest = rest.trim();
+
+                                if !rest.starts_with("(") {
+                                    println!("(error) wrong use of command.");
+                                    println!("Type 'help' to get a help list.");
+                                    continue;
+                                }
+                                
+                                let words: Vec<&str> = rest[1..].split(',')
+                                    .collect();
+                                let mut check = true;
+                                for i in 0..(words.len()-1) {
+                                    let s = words[i].trim();
+                                    if s == "" || !s.is_alphanumeric() {
+                                        println!("(error) wrong use of command.");
+                                        println!("Type 'help' to get a help list.");
+                                        check = false;
+                                        break;
+                                    }
+                                    attrs.push(s.to_string());
+                                }
+                                if !check {
+                                    continue;
+                                }
+
+                                let last = words[words.len() - 1];
+                                if last == "" {
+                                    State::Half(attrs)
+                                } else if last.ends_with(")") {
+                                    let s = &last[..(last.len() - 1)].trim();
+                                    if !s.is_alphanumeric() {
+                                        println!("(error) wrong use of command.");
+                                        println!("Type 'help' to get a help list.");
+                                        continue;
+                                    }
+                                    if s != &"" {
+                                        attrs.push(s.to_string());
+                                    }
+                                    State::Done(attrs)
+                                } else {
+                                    println!("(error) parsing error.");
+                                    println!("Type 'help' to get a help list.");
+                                    continue;
+                                }
+                            } else {
+                                State::Done(Vec::new())
+                            }
+                        });
                     }
                         
                     other => println!("Error: unknown command '{}'", other),
                 } // match cmd
             }
 
-            &mut Operations::Get(_, ref mut attrs) => {
+            Operations::Get(key, attrs) => {
+                operation = Operations::None;
+                let attrs = match attrs {
+                    State::Half(mut attrs) => {
+                        let words: Vec<&str> = line.split(",").collect();
+                        let mut check = true;
+                        for i in 0..(words.len()-1) {
+                            let s = words[i].trim();
+                            if s == "" || !s.is_alphanumeric() {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                check = false;
+                                break;
+                            }
+                            attrs.push(s.to_string());
+                        }
+                        if !check {
+                            continue;
+                        }
+
+                        let last = words[words.len() - 1];
+                        if last == "" {
+                            operation = Operations::Get(key, State::Half(attrs));
+                            continue;
+                        } else if last.ends_with(")") {
+                            let s = &last[..(last.len() - 1)].trim();
+                            if !s.is_alphanumeric() {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                            if s != &"" {
+                                attrs.push(s.to_string());
+                            }
+                            attrs
+                        } else {
+                            println!("(error) parsing error.");
+                            println!("Type 'help' to get a help list.");
+                            continue;
+                        }
+                    }
+                    State::Done(attrs) => attrs,
+                };
+
+                let qry = Query::new(Operations::Get(key, State::Done(attrs)));
+                do_write(&mut stream, &do_encode(&qry));
+                let res = do_read(&mut stream);
+                println!("{}", res);
             }
 
-            &mut Operations::Set(_, ref mut data) => {
+            Operations::Set(key, data, n) => {
+                operation = Operations::None;
             }
 
-            &mut Operations::Add(_, ref mut data) => {
+            Operations::Add(key, data, n) => {
+                operation = Operations::None;
             }
 
-            &mut Operations::Del(_, ref mut attrs) => {
+            Operations::Del(key, attrs) => {
+                operation = Operations::None;
+                let attrs = match attrs {
+                    State::Half(mut attrs) => {
+                        let words: Vec<&str> = line.split(",").collect();
+                        let mut check = true;
+                        for i in 0..(words.len()-1) {
+                            let s = words[i].trim();
+                            if s == "" || !s.is_alphanumeric() {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                check = false;
+                                break;
+                            }
+                            attrs.push(s.to_string());
+                        }
+                        if !check {
+                            continue;
+                        }
+
+                        let last = words[words.len() - 1];
+                        if last == "" {
+                            operation = Operations::Del(key, State::Half(attrs));
+                            continue;
+                        } else if last.ends_with(")") {
+                            let s = &last[..(last.len() - 1)].trim();
+                            if !s.is_alphanumeric() {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                            if s != &"" {
+                                attrs.push(s.to_string());
+                            }
+                            attrs
+                        } else {
+                            println!("(error) parsing error.");
+                            println!("Type 'help' to get a help list.");
+                            continue;
+                        }
+                    }
+                    State::Done(attrs) => attrs,
+                };
+
+                let qry = Query::new(Operations::Del(key, State::Done(attrs)));
+                do_write(&mut stream, &do_encode(&qry));
+                let res = do_read(&mut stream);
+                println!("{}", res);
             }
 
             _ => {}

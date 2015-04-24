@@ -17,7 +17,7 @@
 
 
 #![feature(libc)]
-//#![feature(std_misc)]
+#![feature(unicode)]
 
 extern crate libc;
 extern crate rustc_serialize;
