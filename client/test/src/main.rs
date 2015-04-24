@@ -17,7 +17,7 @@ struct Query {
 
 fn handler(mut stream: TcpStream) {
     println!("\nnew");
-    let mut buf = [0u8; 100];
+    let mut buf = [0u8; 200];
     stream.read(&mut buf).unwrap();
     println!("{}", str::from_utf8(&buf).unwrap());
     let _ = stream.write_all(b"[\"ok\"]");

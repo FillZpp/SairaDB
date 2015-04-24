@@ -34,11 +34,12 @@ pub enum Operations {
     Use(String),
     
     Get(String, State<Vec<String>>),
-    Set(String, String, u32),
-    Add(String, String, u32),
+    Set(String, String, i32),
+    Add(String, String, i32),
     Del(String, State<Vec<String>>)
 }
 
+#[derive(Debug)]
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Query {
     operation: String,

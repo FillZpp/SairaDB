@@ -78,6 +78,34 @@ fn do_decode<T: Decodable>(s: &str) -> T {
     }
 }
 
+fn check_data(data: &str) -> i32 {
+    let mut ret = 0;
+    let mut ins = false;
+    let mut fxx = false;
+
+    for c in data.chars() {
+        if ins {
+            if fxx {
+                fxx = false;
+                continue;
+            }
+            match c {
+                '\"' => ins = false,
+                '\\' => fxx = true,
+                _ => {}
+            }
+        } else {
+            match c {
+                '\"' => ins = true,
+                '{' => ret += 1,
+                '}' => ret -= 1,
+                _ => {}
+            }
+        }
+    }
+    ret
+}
+
 fn print_help() {
     println!("\nHelp:");
     println!("\"help\" to print commands");
@@ -134,10 +162,15 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
     let mut operation = Operations::None;
     loop {
         let mut line = "".to_string();
-        match &operation {
-            &Operations::Get(_, State::Done(_)) => {}
-            &Operations::Del(_, State::Done(_)) => {}
-            _ => loop {
+        let to_readline = match &operation {
+            &Operations::Get(_, State::Done(_)) => false,
+            &Operations::Del(_, State::Done(_)) => false,
+            &Operations::Set(_, _, n) => if n <= 0 {false} else {true},
+            &Operations::Add(_, _, n) => if n <= 0 {false} else {true},
+            _ => true
+        };
+        if to_readline {
+            loop {
                 line = match operation {
                     Operations::None => read_line("saira >> "),
                     _ => read_line("saira *> ")
@@ -291,6 +324,78 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                         });
                     }
 
+                    "set" => {
+                        let mut rests = match words.next() {
+                            Some(r) => r.trim(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        }.splitn(2, " ");
+
+                        let key = match rests.next() {
+                            Some(k) => k.to_string(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+
+                        let data = match rests.next() {
+                            Some(d) => d.trim(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+                        if !data.starts_with("{") {
+                            println!("(error) wrong use of command.");
+                            println!("Type 'help' to get a help list.");
+                            continue;
+                        }
+                        let n = check_data(&data);
+                        operation = Operations::Set(key, data.to_string(), n);
+                    }
+
+                    "add" => {
+                        let mut rests = match words.next() {
+                            Some(r) => r.trim(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        }.splitn(2, " ");
+
+                        let key = match rests.next() {
+                            Some(k) => k.to_string(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+
+                        let data = match rests.next() {
+                            Some(d) => d.trim(),
+                            None => {
+                                println!("(error) wrong use of command.");
+                                println!("Type 'help' to get a help list.");
+                                continue;
+                            }
+                        };
+                        if !data.starts_with("{") {
+                            println!("(error) wrong use of command.");
+                            println!("Type 'help' to get a help list.");
+                            continue;
+                        }
+                        let n = check_data(&data);
+                        operation = Operations::Add(key, data.to_string(), n);
+                    }
+
                     "del" => {
                         let mut rests = match words.next() {
                             Some(r) => r.trim(),
@@ -417,12 +522,54 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 println!("{}", res);
             }
 
-            Operations::Set(key, data, n) => {
+            Operations::Set(key, data, mut n) => {
                 operation = Operations::None;
+                if n < 0 {
+                    println!("(error) parsing error.");
+                    println!("Type 'help' to get a help list.");
+                    continue;
+                } else if n > 0 {
+                    n += check_data(&line);
+                    operation = Operations::Set(key, data + &line, n);
+                    continue;
+                }
+
+                if let Err(_) = json::Json::from_str(&data) {
+                    println!("(error) parsing error.");
+                    println!("Type 'help' to get a help list.");
+                    continue;
+                }
+                
+                let qry = Query::new(Operations::Set(key, data, n));
+                println!("{:?}", qry);
+                do_write(&mut stream, &do_encode(&qry));
+                let res = do_read(&mut stream);
+                println!("{}", res);
             }
 
-            Operations::Add(key, data, n) => {
+            Operations::Add(key, data, mut n) => {
                 operation = Operations::None;
+                if n < 0 {
+                    println!("(error) parsing error.");
+                    println!("Type 'help' to get a help list.");
+                    continue;
+                } else if n > 0 {
+                    n += check_data(&line);
+                    operation = Operations::Add(key, data + &line, n);
+                    continue;
+                }
+
+                if let Err(_) = json::Json::from_str(&data) {
+                    println!("(error) parsing error.");
+                    println!("Type 'help' to get a help list.");
+                    continue;
+                }
+                
+                let qry = Query::new(Operations::Add(key, data, n));
+                println!("{:?}", qry);
+                do_write(&mut stream, &do_encode(&qry));
+                let res = do_read(&mut stream);
+                println!("{}", res);
             }
 
             Operations::Del(key, attrs) => {
