@@ -23,8 +23,16 @@ use std::io::stdin;
 #[cfg(unix)]
 #[link(name = "readline")]
 extern "C" {
+    #[link_name = "add_history"]
+    fn rl_add_history(line: *const i8);
     #[link_name = "readline"]
     fn rl_readline(prompt: *const i8) -> *const i8;
+}
+
+#[cfg(unix)]
+pub fn push_history(line: &str) {
+    let line = CString::new(line.as_bytes()).unwrap();
+    unsafe { rl_add_history(line.as_ptr()) };
 }
 
 #[cfg(unix)]
@@ -36,7 +44,9 @@ fn read_line_unix(prompt: &str) -> Option<String> {
         None
     } else {
         let cs = unsafe { CStr::from_ptr(sp) };
-        Some(from_utf8(cs.to_bytes()).unwrap().to_string())
+        let line = from_utf8(cs.to_bytes()).unwrap();
+        push_history(&line);
+        Some(line.to_string())
     }
 }
 

@@ -172,8 +172,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
         if to_readline {
             loop {
                 line = match operation {
-                    Operations::None => read_line("saira >> "),
-                    _ => read_line("saira *> ")
+                    Operations::None => read_line("saira>> "),
+                    _ => read_line("saira.> ")
                 };
                 if line != "".to_string() {
                     break;
@@ -541,7 +541,6 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
                 
                 let qry = Query::new(Operations::Set(key, data, n));
-                println!("{:?}", qry);
                 do_write(&mut stream, &do_encode(&qry));
                 let res = do_read(&mut stream);
                 println!("{}", res);
@@ -566,7 +565,6 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
                 
                 let qry = Query::new(Operations::Add(key, data, n));
-                println!("{:?}", qry);
                 do_write(&mut stream, &do_encode(&qry));
                 let res = do_read(&mut stream);
                 println!("{}", res);

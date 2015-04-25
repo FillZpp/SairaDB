@@ -33,6 +33,7 @@ pub fn get_flags() -> HashMap<String, String> {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
+    opts.optflag("v", "version", "Print version");
     opts.optflag("h", "help", "Print this help menu");
     opts.optopt("", "cookie", "Set cookie for connection safety", "COOKIE");
     opts.optopt("", "ip", "Master IP", "IP");
@@ -46,8 +47,13 @@ pub fn get_flags() -> HashMap<String, String> {
         }
     };
 
-    if matches.opt_present("h") {
-        usage(opts);
+    if matches.opt_present("version") {
+        print_version();
+        unsafe { libc::exit(0); }
+    }
+
+    if matches.opt_present("help") {
+        print_usage(opts);
         unsafe { libc::exit(0); }
     }
 
@@ -77,7 +83,11 @@ pub fn get_flags() -> HashMap<String, String> {
     flag_map
 }
 
-fn usage(opts: Options) {
+fn print_version() {
+    println!("saira-client {}", env!("CARGO_PKG_VERSION"));
+}
+
+fn print_usage(opts: Options) {
     print!("{}", opts.usage("Usage: saira-slave [OPTIONS]"));
 }
 
