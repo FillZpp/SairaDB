@@ -20,6 +20,7 @@ extern crate rustc_unicode;
 use std::net::TcpStream;
 use std::collections::HashMap;
 use std::io::{stderr, Write, Read};
+use std::str;
 use self::rustc_unicode::str::UnicodeStr;
 use super::libc;
 use super::rustc_serialize::*;
@@ -37,16 +38,28 @@ fn do_write(stream: &mut TcpStream, msg: &String) {
     }
 }
 
-fn do_read(stream: &mut TcpStream) -> String {
-    let mut buf = [0u8; 32];
-    let n = match stream.read(&mut buf) {
-        Ok(n) => n,
-        Err(e) => {
-            let _ = writeln!(stderr(), "Error: {}", e);
-            unsafe { libc::exit(4); }
+fn do_read(stream: &mut TcpStream, buf: &mut [u8]) -> String {
+    let mut msg = "".to_string();
+    loop {
+        let n = match stream.read(buf) {
+            Ok(n) => n,
+            Err(e) => {
+                let _ = writeln!(stderr(), "Error: {}", e);
+                unsafe { libc::exit(4); }
+            }
+        };
+        msg = msg + match str::from_utf8(&buf[0..n]) {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = writeln!(stderr(), "Error: {}", e);
+                unsafe { libc::exit(4); }
+            }
+        };
+        if n < buf.len() {
+            break;
         }
-    };
-    String::from_utf8_lossy(&buf[0..n]).into_owned()
+    }
+    msg
 }
 
 fn read_line(prompt: &str) -> String {
@@ -125,6 +138,7 @@ fn print_help() {
 pub fn start_repl(flag_map: HashMap<String, String>) {
     let mut stream;
     let mut addr: String = flag_map.get("addr").unwrap().to_string();
+    let mut buf = [0u8; 100];
     loop {
         stream = {
             let s: &str = &addr;
@@ -139,7 +153,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
         };
         
         do_write(&mut stream, flag_map.get("cookie").unwrap());
-        let msg: Vec<String> = do_decode(&do_read(&mut stream));
+        let msg: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
         if msg.len() == 1 {
             if msg[0] == "ok".to_string() {
                 break;
@@ -210,7 +224,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                         let qry = Query::new(Operations::ShowDBs);
                         do_write(&mut stream, &do_encode(&qry));
-                        let dbs: Vec<String> = do_decode(&do_read(&mut stream));
+                        let dbs: Vec<String> = do_decode(&do_read(&mut stream,
+                                                                  &mut buf));
                         for db in dbs {
                             println!("{}", db);
                         }
@@ -224,7 +239,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                         
                         let qry = Query::new(Operations::Create(name));
                         do_write(&mut stream, &do_encode(&qry));
-                        let res = do_read(&mut stream);
+                        let res = do_read(&mut stream, &mut buf);
                         println!("{}", res);
                     }
 
@@ -236,7 +251,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                         let qry = Query::new(Operations::Drop(name));
                         do_write(&mut stream, &do_encode(&qry));
-                        let res = do_read(&mut stream);
+                        let res = do_read(&mut stream, &mut buf);
                         println!("{}", res);
                     }
 
@@ -248,7 +263,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                         let qry = Query::new(Operations::Use(name));
                         do_write(&mut stream, &do_encode(&qry));
-                        let res = do_read(&mut stream);
+                        let res = do_read(&mut stream, &mut buf);
                         println!("{}", res);
                     }
 
@@ -518,7 +533,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 let qry = Query::new(Operations::Get(key, State::Done(attrs)));
                 do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream);
+                let res = do_read(&mut stream, &mut buf);
                 println!("{}", res);
             }
 
@@ -542,7 +557,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 
                 let qry = Query::new(Operations::Set(key, data, n));
                 do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream);
+                let res = do_read(&mut stream, &mut buf);
                 println!("{}", res);
             }
 
@@ -566,7 +581,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 
                 let qry = Query::new(Operations::Add(key, data, n));
                 do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream);
+                let res = do_read(&mut stream, &mut buf);
                 println!("{}", res);
             }
 
@@ -616,7 +631,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 let qry = Query::new(Operations::Del(key, State::Done(attrs)));
                 do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream);
+                let res = do_read(&mut stream, &mut buf);
                 println!("{}", res);
             }
 

@@ -1,7 +1,7 @@
 extern crate rustc_serialize;
 
 use std::net::{TcpListener, TcpStream, Shutdown};
-use std::io::{Read, Write};
+use std::io::{Read, Write, Error};
 use std::str;
 use std::thread;
 use rustc_serialize::json;
@@ -15,20 +15,36 @@ struct Query {
     data: String,
 }
 
+fn read(stream: &mut TcpStream, buf: &mut [u8]) -> Result<String, Error> {
+    let mut msg = "".to_string();
+    loop {
+        let n = match stream.read(buf) {
+            Ok(n) => n,
+            Err(e) => return Err(e)
+        };
+
+        msg = msg + str::from_utf8(&buf[0..n]).unwrap();
+        if n < buf.len() {
+            break;
+        }
+    }
+    Ok(msg)
+}
+
 fn handler(mut stream: TcpStream) {
     println!("\nnew");
-    let mut buf = [0u8; 200];
+    let mut buf = [0u8; 80];
     stream.read(&mut buf).unwrap();
     println!("{}", str::from_utf8(&buf).unwrap());
     let _ = stream.write_all(b"[\"ok\"]");
 
     loop {
-        let n = match stream.read(&mut buf) {
-            Ok(n) => n,
+        let msg = match read(&mut stream, &mut buf) {
+            Ok(m) => m,
             Err(_) => break
         };
-        println!("{}", str::from_utf8(&buf[0..n]).unwrap());
-        let qry: Query = match json::decode(str::from_utf8(&buf[0..n]).unwrap()) {
+        println!("{}", msg);
+        let qry: Query = match json::decode(&msg) {
             Ok(q) => q,
             Err(e) => {
                 println!("{}", e);
