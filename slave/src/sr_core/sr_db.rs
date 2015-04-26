@@ -18,7 +18,7 @@
 
 extern crate serialize;
 
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Mutex};
@@ -29,7 +29,10 @@ use self::serialize::json::Json;
 
 #[allow(dead_code)]
 pub struct Query {
-    ty: String,
+    operation: String,
+    name: String,
+    attributes: Vec<String>,
+    data: String
 }
 
 #[allow(dead_code)]
@@ -43,8 +46,7 @@ struct Page {
     id: u64,
     size: AtomicUsize,
     units: Arc<BTreeMap<String, Arc<Unit>>>,
-    // lock when add/delete Unit
-    mtx: Mutex<bool>  
+    mtx: Mutex<bool>  // lock when add/delete Unit
 }
 
 #[allow(dead_code)]

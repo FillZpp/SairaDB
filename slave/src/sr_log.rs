@@ -24,11 +24,11 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::io::{stderr, Write};
 use std::fs::{create_dir_all, File};
 use std::path::Path;
-use std::old_io::timer::Timer;
-use std::time::Duration;
+//use std::old_io::timer::Timer;
+//use std::time::Duration;
 
 
-pub fn init(dir: String) -> (Sender<String>, thread::JoinHandle) {
+pub fn init(dir: String) -> (Sender<String>, thread::JoinHandle<()>) {
     let tm = time::now();
     let log_dir = dir + "/slave/log/" + &tm_cat(tm);
     let _ = create_dir_all(Path::new(&log_dir));
@@ -65,7 +65,7 @@ fn log_task(log_dir: String, rx: Receiver<String>) {
     };
     let mut size = 0usize;
     let mut cache = "".to_string();
-    let mut timer = Timer::new().unwrap();
+    //let mut timer = Timer::new().unwrap();
     
     loop {
         if cache.len() == 0 {
@@ -73,14 +73,14 @@ fn log_task(log_dir: String, rx: Receiver<String>) {
             tm = time::now();
             cache = tm_format(tm) + " " + &new_log + "\n";
         } else {
-            let timeout = timer.oneshot(Duration::milliseconds(100));
-            select! {
+            //let timeout = timer.oneshot(Duration::milliseconds(100));
+            /*select! {
                 new_log = rx.recv() => {
                     cache = cache + &tm_format(tm) + " " + &new_log.unwrap() + "\n";
                     continue;
-                },
+                }
                 _ = timeout.recv() => {}
-            }
+            }*/
 
             match log_file.write_all(cache.as_bytes()) {
                 Ok(_) => {println!("ok");}
