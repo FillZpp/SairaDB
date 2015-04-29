@@ -55,15 +55,13 @@ func sendTask(idx int, ip string, sendChan chan SendMessage) {
 					atomic.AddInt32(&(MasterList[idx].Status), -1)
 					a := true
 					for a {
-						tch := make(chan bool)
-						go common.SetTimeout(tch, 100)
 						select {
 						case sm = <-sendChan:
 							sm.Ch<- err
 							if sm.Ever {
 								waitSendList.PushFront(sm)
 							}
-						case <-tch:
+						case <-time.After(100 * time.Millisecond):
 							a = false
 						}
 					}
@@ -126,10 +124,8 @@ func sendTask(idx int, ip string, sendChan chan SendMessage) {
 			if ele != nil {
 				sm = ele.Value.(SendMessage)
 			} else {
-				tch := make(chan bool, 1)
-				go common.SetTimeout(tch, 1000)
 				select {
-				case <-tch:
+				case <-time.After(time.Second):
 					sm = SendMessage{
 						[]string{"heartbeat"},
 						false,

@@ -28,6 +28,7 @@ import (
 	"sync/atomic"
 	"strings"
 	"strconv"
+	"time"
 
 	"common"
 )
@@ -114,13 +115,11 @@ func alterDBTask() {
 				tmp = nil
 			}
 		} else {
-			ch := make(chan bool, 1)
-			go common.SetTimeout(ch, 10)
 			select {
 			case ad = <-DBChan:
 				handleDBAlter(tmp, ad)
 				continue
-			case <-ch:
+			case <-time.After(10 * time.Millisecond):
 			}
 
 			atomic.StorePointer(&Databases, unsafe.Pointer(tmp))

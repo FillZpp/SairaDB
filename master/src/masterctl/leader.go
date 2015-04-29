@@ -23,10 +23,8 @@ import (
 	"math/rand"
 	"fmt"
 	"time"
-	//"strconv"
 
 	"stime"
-	"common"
 	"meta"
 )
 
@@ -72,14 +70,12 @@ func findLeader() {
 		}
 
 		for _, resCh := range resChans {
-			tmCh := make(chan bool)
-			go common.SetTimeout(tmCh, 5000)
 			select {
 			case res := <-resCh:
 				if res[0] == "ok" {
 					getVote++
 				}
-			case <-tmCh:
+			case <-time.After(5 * time.Second):
 			}
 		}
 
@@ -112,8 +108,6 @@ func findLeader() {
 			//var otherLeader string
 			//var itsFollowerNum int
 			for _, resCh := range resChans {
-				tmCh := make(chan bool)
-				go common.SetTimeout(tmCh, 5000)
 				select {
 				case res := <-resCh:
 					if res[0] == "ok" {
@@ -123,7 +117,7 @@ func findLeader() {
 					} else {
 						
 					}
-				case <-tmCh:
+				case <-time.After(5 * time.Second):
 				}
 			}
 			return

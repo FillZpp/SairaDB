@@ -22,7 +22,6 @@ import (
 	"os"
 	"encoding/gob"
 	"bytes"
-	"time"
 )
 
 var ExitChan = make(chan string)
@@ -46,10 +45,5 @@ func DeepCopy(a, b interface{}) error {
 		return err
 	}
 	return dec.Decode(b)
-}
-
-func SetTimeout(ch chan bool, n uint) {
-	time.Sleep(time.Duration(n) * time.Millisecond)
-	ch<- true
 }
 

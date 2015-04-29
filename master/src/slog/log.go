@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"common"
 	"config"
@@ -101,15 +102,13 @@ func task() {
 			size++
 		} else {
 			if size < 100 {
-				ch := make(chan bool)
-				go common.SetTimeout(ch, 100)
 				select {
 				case newLog = <-LogChan:
 					cache = stime.TimeFormat() +
 						" " + newLog + "\n"
 					size++
 					continue
-				case <-ch:
+				case <-time.After(100 * time.Millisecond):
 				}
 			}
 			

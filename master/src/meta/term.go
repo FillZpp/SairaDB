@@ -25,8 +25,7 @@ import (
 	"path"
 	"strconv"
 	"sync/atomic"
-
-	"common"
+	"time"
 )
 
 var (
@@ -78,12 +77,10 @@ func termTask() {
 				}
 			}
 		} else {
-			ch := make(chan bool, 1)
-			go common.SetTimeout(ch, 10)
 			select {
 			case <-TermChan:
 				continue
-			case <-ch:
+			case <-time.After(10 * time.Millisecond):
 			}
 
 			syncTermFile()
