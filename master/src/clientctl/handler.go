@@ -16,98 +16,72 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-package slavectl
+package clientctl
 
 import (
 	"net"
+	"encoding/json"
 	"fmt"
-	"time"
-	"sync/atomic"
-
+	
 	"slog"
 	"common"
 	"query"
-	//"csthash"
+	//"meta"
 )
 
 func handlerLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("slave controller handle (%v): %v", ip, reason)
+		fmt.Sprintf("client controller handle (%v): %v", ip, reason)
 }
 
-func slaveHandler(conn net.Conn) {
+func clientHandler(conn net.Conn) {
+	fmt.Println("new client")
 	defer conn.Close()
 	var msg string
-	var status string
 	buf := make([]byte, 1000)
 	ip, _, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
-		slog.LogChan<- "slave controller address split error: " + err.Error()
+		slog.LogChan<- "client controller address split error: " +
+			err.Error()
 		return
 	}
 
-	// check
-	mutex.Lock()
-	slv, ok := Slaves[ip]
-	if !ok {
-		slv = &Slave{
-			ip,
-			make([]uint64, 0),
-			make(chan query.Query, 10000),
-			make(chan RecvRegister, 10000),
-			0,
-			0,
-		}
-		Slaves[ip] = slv
-	}
-	mutex.Unlock()
-	
-	if atomic.CompareAndSwapInt32(&slv.sendStatus, 0, 1) {
-		status = "send"
-	} else if atomic.CompareAndSwapInt32(&slv.recvStatus, 0, 1) {
-		status = "recv"
-	} else {
-		status = "no need"
-	}
-
-	msg, err = common.ConnRead(buf, conn, 100)
+	msg, err = common.ConnRead(buf, conn, 500)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
 	}
-	
+
 	if msg != cookie {
+		b, _ := json.Marshal([]string{"wrong"})
 		handlerLog(ip, "wrong cookie")
-		common.ConnWriteString("wrong cookie", conn, 100)
+		common.ConnWrite(b, conn, 500)
 		return
 	}
-		
-	err = common.ConnWriteString(status, conn, 100)
+
+	b, _ := json.Marshal([]string{"ok"})
+	err = common.ConnWrite(b, conn, 500)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
-	} else if status == "no need" {
-		handlerLog(ip, "no need")
-		return
 	}
-	
-	handlerLog(ip, "connected")
 
-	time.Sleep(time.Hour)
-	if status == "send" {
-		sendSlave(conn, slv.sendChan, slv.recvChan)
-	} else {
-		recvSlave(conn, slv.recvChan)
+	for {
+		msg, err = common.ConnRead(buf, conn, -1)
+		if err != nil {
+			handlerLog(ip, err.Error())
+			return
+		}
+
+		var qry query.CliQuery
+		err = json.Unmarshal([]byte(msg), &qry)
+		if err != nil {
+			fmt.Println("json parse error");
+			common.ConnWriteString("Error: parse error", conn, 500)
+			continue
+		}
+
+		common.ConnWriteString("ok", conn, 500)
 	}
 }
-
-func sendSlave(conn net.Conn, sendChan chan query.Query,
-	recvChan chan RecvRegister) {
-	
-}
-
-func recvSlave(conn net.Conn, recvChan chan RecvRegister) {
-	
-}
-
 

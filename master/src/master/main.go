@@ -37,6 +37,7 @@ import (
 	"csthash"
 	"masterctl"
 	"slavectl"
+	"clientctl"
 )
 
 func main() {
@@ -51,8 +52,8 @@ func main() {
 	csthash.Init()
 	masterctl.Init()
 	slavectl.Init()
-
 	test()
+	clientctl.Init()
 }
 
 func test() {

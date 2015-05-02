@@ -29,12 +29,14 @@ func ConnRead(buf []byte, conn net.Conn, timeout int) (ret string, err error) {
 		if timeout > 0 {
 			conn.SetReadDeadline(time.Now().
 				Add(time.Duration(timeout) * time.Millisecond))
+		} else {
+			conn.SetReadDeadline(time.Now().Add(time.Hour * 100000))
 		}
 		n, err = conn.Read(buf)
 		if err != nil {
 			return
 		}
-		
+
 		ret += string(buf[:n])
 		if n < len(buf) {
 			break
