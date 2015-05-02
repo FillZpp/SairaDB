@@ -40,12 +40,13 @@ pub enum Operations {
 }
 
 #[derive(Debug)]
+#[allow(non_snake_case)]
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Query {
-    operation: String,
-    name: String,
-    attributes: Vec<String>,
-    data: String
+    Operation: String,
+    Name: String,
+    Attributes: Vec<String>,
+    Data: String
 }
 
 impl Query {
@@ -53,42 +54,42 @@ impl Query {
         match oper {
             Operations::None =>
                 Query {
-                    operation: "none".to_string(),
-                    name: "".to_string(),
-                    attributes: Vec::new(),
-                    data: "".to_string(),
+                    Operation: "none".to_string(),
+                    Name: "".to_string(),
+                    Attributes: Vec::new(),
+                    Data: "".to_string(),
                 },
 
             Operations::ShowDBs =>
                 Query {
-                    operation: "show_dbs".to_string(),
-                    name: "".to_string(),
-                    attributes: Vec::new(),
-                    data: "".to_string(),
+                    Operation: "show_dbs".to_string(),
+                    Name: "".to_string(),
+                    Attributes: Vec::new(),
+                    Data: "".to_string(),
                 },
 
             Operations::Create(name) =>
                 Query {
-                    operation: "create".to_string(),
-                    name: name,
-                    attributes: Vec::new(),
-                    data: "".to_string(),
+                    Operation: "create".to_string(),
+                    Name: name,
+                    Attributes: Vec::new(),
+                    Data: "".to_string(),
                 },
 
             Operations::Drop(name) =>
                 Query {
-                    operation: "drop".to_string(),
-                    name: name,
-                    attributes: Vec::new(),
-                    data: "".to_string(),
+                    Operation: "drop".to_string(),
+                    Name: name,
+                    Attributes: Vec::new(),
+                    Data: "".to_string(),
                 },
 
             Operations::Use(name) =>
                 Query {
-                    operation: "use".to_string(),
-                    name: name,
-                    attributes: Vec::new(),
-                    data: "".to_string(),
+                    Operation: "use".to_string(),
+                    Name: name,
+                    Attributes: Vec::new(),
+                    Data: "".to_string(),
                 },
 
             Operations::Get(key, attrs) => {
@@ -100,27 +101,27 @@ impl Query {
                     }
                 };
                 Query {
-                    operation: "get".to_string(),
-                    name: key,
-                    attributes: attrs,
-                    data: "".to_string()
+                    Operation: "get".to_string(),
+                    Name: key,
+                    Attributes: attrs,
+                    Data: "".to_string()
                 }
             }
 
             Operations::Set(key, data, _) =>
                 Query {
-                    operation: "set".to_string(),
-                    name: key,
-                    attributes: Vec::new(),
-                    data: data
+                    Operation: "set".to_string(),
+                    Name: key,
+                    Attributes: Vec::new(),
+                    Data: data
                 },
 
             Operations::Add(key, data, _) =>
                 Query {
-                    operation: "add".to_string(),
-                    name: key,
-                    attributes: Vec::new(),
-                    data: data
+                    Operation: "add".to_string(),
+                    Name: key,
+                    Attributes: Vec::new(),
+                    Data: data
                 },
 
             Operations::Del(key, attrs) => {
@@ -132,10 +133,10 @@ impl Query {
                     }
                 };
                 Query {
-                    operation: "del".to_string(),
-                    name: key,
-                    attributes: attrs,
-                    data: "".to_string()
+                    Operation: "del".to_string(),
+                    Name: key,
+                    Attributes: attrs,
+                    Data: "".to_string()
                 }
             }
         }
