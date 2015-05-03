@@ -131,15 +131,24 @@ func alterDBTask() {
 
 func handleDBAlter(dbs *map[string]int, ad AlterDB) bool {
 	switch ad.AlterType {
-	case "add_db":
+	case "create":
 		_, ok := (*dbs)[ad.AlterCont[0]]
 		if ok {
-			ad.Ch<- errors.New("The database already exists.")
+			ad.Ch<- errors.New(
+				fmt.Sprintf("database '%v' already exists.",
+					ad.AlterCont[0]))
 			return false
 		}
 		(*dbs)[ad.AlterCont[0]] = 1
-		// TODO
-		
+	case "drop":
+		_, ok := (*dbs)[ad.AlterCont[0]]
+		if !ok {
+			ad.Ch<- errors.New(
+				fmt.Sprintf("database '%v' does not exist.",
+					ad.AlterCont[0]))
+			return false
+		}
+		delete(*dbs, ad.AlterCont[0])
 	default:
 		ad.Ch<- errors.New("Undefined alter type.")
 		return false

@@ -22,11 +22,12 @@ import (
 	"net"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	
 	"slog"
 	"common"
 	"query"
-	//"meta"
+	"meta"
 )
 
 func handlerLog(ip, reason string) {
@@ -35,7 +36,6 @@ func handlerLog(ip, reason string) {
 }
 
 func clientHandler(conn net.Conn) {
-	fmt.Println("new client")
 	defer conn.Close()
 	var msg string
 	buf := make([]byte, 1000)
@@ -65,7 +65,8 @@ func clientHandler(conn net.Conn) {
 		handlerLog(ip, err.Error())
 		return
 	}
-
+	
+	currentDB := "default"
 	for {
 		msg, err = common.ConnRead(buf, conn, -1)
 		if err != nil {
@@ -77,11 +78,63 @@ func clientHandler(conn net.Conn) {
 		err = json.Unmarshal([]byte(msg), &qry)
 		if err != nil {
 			fmt.Println("json parse error");
-			common.ConnWriteString("Error: parse error", conn, 500)
+			common.ConnWriteString("(error) parse error", conn, 500)
 			continue
 		}
 
-		common.ConnWriteString("ok", conn, 500)
+		switch qry.Operation {
+		case "show_dbs":
+			databases := (*map[string]int)(
+				atomic.LoadPointer(&(meta.Databases)))
+			keys := make([]string, 0, len(*databases))
+			for k := range *databases {
+				keys = append(keys, k)
+			}
+			b, _ = json.Marshal(keys)
+			common.ConnWrite(b, conn, 500)
+		case "create":
+			errChan := make(chan error)
+			meta.DBChan<- meta.AlterDB{
+				errChan,
+				"create",
+				[]string{qry.Name},
+			}
+			ret := "ok"
+			err = <-errChan
+			if err != nil {
+				ret = "(error) " + err.Error()
+			}
+			common.ConnWriteString(ret, conn, 500)
+		case "drop":
+			errChan := make(chan error)
+			meta.DBChan<- meta.AlterDB{
+				errChan,
+				"drop",
+				[]string{qry.Name},
+			}
+			ret := "ok"
+			err = <-errChan
+			if err != nil {
+				ret = "(error) " + err.Error()
+			}
+			common.ConnWriteString(ret, conn, 500)
+		case "use":
+			databases := (*map[string]int)(
+				atomic.LoadPointer(&(meta.Databases)))
+			ret := "ok"
+			if _, ok := (*databases)[qry.Name]; ok {
+				currentDB = qry.Name
+				fmt.Println("use", currentDB)
+			} else {
+				ret = fmt.Sprintf("(error) database '%v' does not exist.",
+					qry.Name);
+			}
+			common.ConnWriteString(ret, conn, 500)
+			
+			// TODO
+		default:
+			common.ConnWriteString("(error) unknown command", conn, 500)
+		}
 	}
 }
 
