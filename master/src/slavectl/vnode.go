@@ -63,6 +63,9 @@ func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
 			continue
 		case qry := <-qryChan:
 			// TODO
+			if VNodeDupNum[id] == 0 {
+				qry.ResChan<- "None duplicate for such vnode"
+			}
 			_ = qry
 		}
 	}

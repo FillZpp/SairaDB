@@ -28,6 +28,8 @@ import (
 	"common"
 	"query"
 	"meta"
+	"csthash"
+	"stime"
 )
 
 func handlerLog(ip, reason string) {
@@ -46,7 +48,7 @@ func clientHandler(conn net.Conn) {
 		return
 	}
 
-	msg, err = common.ConnRead(buf, conn, 500)
+	msg, err = common.ConnRead(buf, conn, 5000)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
@@ -55,12 +57,12 @@ func clientHandler(conn net.Conn) {
 	if msg != cookie {
 		b, _ := json.Marshal([]string{"wrong"})
 		handlerLog(ip, "wrong cookie")
-		common.ConnWrite(b, conn, 500)
+		common.ConnWrite(b, conn, 5000)
 		return
 	}
 
 	b, _ := json.Marshal([]string{"ok"})
-	err = common.ConnWrite(b, conn, 500)
+	err = common.ConnWrite(b, conn, 5000)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
@@ -78,7 +80,7 @@ func clientHandler(conn net.Conn) {
 		err = json.Unmarshal([]byte(msg), &qry)
 		if err != nil {
 			fmt.Println("json parse error");
-			common.ConnWriteString("(error) parse error", conn, 500)
+			common.ConnWriteString("(error) parse error", conn, 5000)
 			continue
 		}
 
@@ -91,7 +93,7 @@ func clientHandler(conn net.Conn) {
 				keys = append(keys, k)
 			}
 			b, _ = json.Marshal(keys)
-			common.ConnWrite(b, conn, 500)
+			common.ConnWrite(b, conn, 5000)
 		case "create":
 			errChan := make(chan error)
 			meta.DBChan<- meta.AlterDB{
@@ -104,7 +106,7 @@ func clientHandler(conn net.Conn) {
 			if err != nil {
 				ret = "(error) " + err.Error()
 			}
-			common.ConnWriteString(ret, conn, 500)
+			common.ConnWriteString(ret, conn, 5000)
 		case "drop":
 			errChan := make(chan error)
 			meta.DBChan<- meta.AlterDB{
@@ -117,7 +119,7 @@ func clientHandler(conn net.Conn) {
 			if err != nil {
 				ret = "(error) " + err.Error()
 			}
-			common.ConnWriteString(ret, conn, 500)
+			common.ConnWriteString(ret, conn, 5000)
 		case "use":
 			databases := (*map[string]int)(
 				atomic.LoadPointer(&(meta.Databases)))
@@ -129,11 +131,21 @@ func clientHandler(conn net.Conn) {
 				ret = fmt.Sprintf("(error) database '%v' does not exist.",
 					qry.Name);
 			}
-			common.ConnWriteString(ret, conn, 500)
-			
-			// TODO
+			common.ConnWriteString(ret, conn, 5000)
 		default:
-			common.ConnWriteString("(error) unknown command", conn, 500)
+			resChan := make(chan string)
+			qryChan := csthash.FindVNode(qry.Name)
+			start := atomic.LoadInt64(&stime.UnixTime)
+			qryChan<- query.Query{
+				stime.GetID(),
+				qry,
+				resChan,
+			}
+			res := <-resChan
+			end := atomic.LoadInt64(&stime.UnixTime)
+			b, _ := json.Marshal([]string{res,
+				fmt.Sprintf("%0.2f", float64(end - start)/1e9)})
+			common.ConnWrite(b, conn, 5000)
 		}
 	}
 }

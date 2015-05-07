@@ -37,6 +37,7 @@ type RecvRegister struct {
 type Slave struct {
 	ip string
 	vnodes []uint64
+	rwMutex sync.RWMutex
 	
 	sendChan chan query.Query
 	recvChan chan RecvRegister

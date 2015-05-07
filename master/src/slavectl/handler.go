@@ -22,12 +22,14 @@ import (
 	"net"
 	"fmt"
 	"time"
+	"sync"
 	"sync/atomic"
+	"encoding/json"
 
 	"slog"
 	"common"
 	"query"
-	//"csthash"
+	"csthash"
 )
 
 func handlerLog(ip, reason string) {
@@ -46,13 +48,27 @@ func slaveHandler(conn net.Conn) {
 		return
 	}
 
+	msg, err = common.ConnRead(buf, conn, 1000)
+	if err != nil {
+		handlerLog(ip, err.Error())
+		return
+	}
+
+	if msg != cookie {
+		handlerLog(ip, "wrong cookie")
+		common.ConnWriteString("wrong cookie", conn, 1000)
+		return
+	}
+
 	// check
 	mutex.Lock()
 	slv, ok := Slaves[ip]
 	if !ok {
+		var rwMutex sync.RWMutex
 		slv = &Slave{
 			ip,
 			make([]uint64, 0),
+			rwMutex,
 			make(chan query.Query, 10000),
 			make(chan RecvRegister, 10000),
 			0,
@@ -70,19 +86,7 @@ func slaveHandler(conn net.Conn) {
 		status = "no need"
 	}
 
-	msg, err = common.ConnRead(buf, conn, 100)
-	if err != nil {
-		handlerLog(ip, err.Error())
-		return
-	}
-	
-	if msg != cookie {
-		handlerLog(ip, "wrong cookie")
-		common.ConnWriteString("wrong cookie", conn, 100)
-		return
-	}
-		
-	err = common.ConnWriteString(status, conn, 100)
+	err = common.ConnWriteString(status, conn, 1000)
 	if err != nil {
 		handlerLog(ip, err.Error())
 		return
@@ -95,19 +99,39 @@ func slaveHandler(conn net.Conn) {
 
 	time.Sleep(time.Hour)
 	if status == "send" {
-		sendSlave(conn, slv.sendChan, slv.recvChan)
+		sendSlave(conn, slv)
 	} else {
-		recvSlave(conn, slv.recvChan)
+		recvSlave(conn, slv)
 	}
 }
 
-func sendSlave(conn net.Conn, sendChan chan query.Query,
-	recvChan chan RecvRegister) {
+func sendSlave(conn net.Conn, slv *Slave) {
 	
 }
 
-func recvSlave(conn net.Conn, recvChan chan RecvRegister) {
+func recvSlave(conn net.Conn, slv *Slave) {
+	buf := make([]byte, 1000)
+	msg, err := common.ConnRead(buf, conn, 1000)
+	if err != nil {
+		handlerLog(slv.ip, err.Error())
+		atomic.StoreInt32(&slv.recvStatus, 0)
+	}
 	
+	var arr []uint64
+	err = json.Unmarshal([]byte(msg), &arr)
+	if err == nil {
+		vnodes := make([]uint64, 0, len(arr))
+		for _, i := range arr {
+			if i < csthash.VNodeNum {
+				vnodes = append(vnodes, i)
+			}
+		}
+		slv.rwMutex.Lock()
+		slv.vnodes = vnodes
+		slv.rwMutex.Unlock()
+	}
+
+	err = common.ConnWriteString("ok", conn, 1000)
 }
 
 
