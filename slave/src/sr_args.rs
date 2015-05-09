@@ -39,7 +39,8 @@ pub fn get_flags() -> HashMap<String, String> {
     opts.optopt("", "conf-dir", "Find config files in <DIR>", "DIR");
     opts.optopt("", "data-dir", "Save data in <DIR>/slave", "DIR");
     opts.optopt("", "cookie", "Set cookie for connection safety", "COOKIE");
-    opts.optopt("p", "port", "Listen port", "PORT");
+    opts.optopt("", "port", "Listen port for other slave", "PORT");
+    opts.optopt("", "port-client", "Listen port for client", "PORT");
     opts.optopt("", "master-port", "Port master listened for slave", "PORT");
 
     let matches = match opts.parse(&args[1..]) {
@@ -99,6 +100,11 @@ pub fn get_flags() -> HashMap<String, String> {
     flag_map.insert("port".to_string(), match matches.opt_str("port") {
         Some(a) => a,
         None => "4403".to_string()
+    });
+    
+    flag_map.insert("port-client".to_string(), match matches.opt_str("port-client") {
+        Some(a) => a,
+        None => "4404".to_string()
     });
 
     flag_map.insert("master-port".to_string(), match matches.opt_str("master-port") {
