@@ -37,7 +37,8 @@ pub fn get_flags() -> HashMap<String, String> {
     opts.optflag("h", "help", "Print this help menu");
     opts.optopt("", "cookie", "Set cookie for connection safety", "COOKIE");
     opts.optopt("", "ip", "Master IP", "IP");
-    opts.optopt("", "port", "Port master listened for client", "PORT");
+    opts.optopt("", "master-port", "Port master listened for client", "PORT");
+    opts.optopt("", "slave-port", "Port slave listened for client", "PORT");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -73,11 +74,18 @@ pub fn get_flags() -> HashMap<String, String> {
     };
 
     flag_map.insert("addr".to_string(), {
-        let port = match matches.opt_str("port") {
+        let port = match matches.opt_str("master-port") {
             Some(a) => a,
             None => "4400".to_string()
         };
         ip + ":" + &port
+    });
+
+    flag_map.insert("slave-port".to_string(), {
+        match matches.opt_str("slave-port") {
+            Some(a) => a,
+            None => "4404".to_string()
+        }
     });
 
     flag_map

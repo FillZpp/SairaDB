@@ -138,7 +138,9 @@ fn print_help() {
 pub fn start_repl(flag_map: HashMap<String, String>) {
     let mut stream;
     let mut addr: String = flag_map.get("addr").unwrap().to_string();
+    let slave_port: String = flag_map.get("slave-port").unwrap().to_string();
     let mut buf = [0u8; 100];
+    let mut cache: HashMap<String, String> = HashMap::new();
     loop {
         stream = {
             let s: &str = &addr;
@@ -530,11 +532,52 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     }
                     State::Done(attrs) => attrs,
                 };
+                
+                let qry = do_encode(
+                    &Query::new(Operations::Get(key.to_string(),
+                                                State::Done(attrs))));
 
-                let qry = Query::new(Operations::Get(key, State::Done(attrs)));
-                do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream, &mut buf);
-                println!("{}", res);
+                match cache.get(&key) {
+                    Some(ip) => {
+                        let addr = ip.to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                // TODO
+                                // Check the result
+                                // If get nothing, then ask master for slave ip
+                                println!("{:?}", res);
+                                continue;
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                    None => {}
+                }
+
+                // ask master for slave ip
+                do_write(&mut stream, &qry);
+                let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
+                match res[0].as_ref() {
+                    "ok" => {
+                        cache.insert(key, res[1].to_string());
+                        let addr = res[1].to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                println!("{:?}", res);
+                            }
+                            Err(e) => println!("(error) can not connect to slave: {}", e)
+                        }
+                    }
+                    _ => println!("{}", res[1])
+                }
             }
 
             Operations::Set(key, data, mut n) => {
@@ -555,10 +598,50 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     continue;
                 }
                 
-                let qry = Query::new(Operations::Set(key, data, n));
-                do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream, &mut buf);
-                println!("{}", res);
+                let qry = &do_encode(&Query::new(Operations::Set(key.to_string(),
+                                                                data, n)));
+
+                match cache.get(&key) {
+                    Some(ip) => {
+                        let addr = ip.to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                // TODO
+                                // Check the result
+                                // If get nothing, then ask master for slave ip
+                                println!("{:?}", res);
+                                continue;
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                    None => {}
+                }
+
+                // ask master for slave ip
+                do_write(&mut stream, &qry);
+                let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
+                match res[0].as_ref() {
+                    "ok" => {
+                        cache.insert(key, res[1].to_string());
+                        let addr = res[1].to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                println!("{:?}", res);
+                            }
+                            Err(e) => println!("(error) can not connect to slave: {}", e)
+                        }
+                    }
+                    _ => println!("{}", res[1])
+                }
             }
 
             Operations::Add(key, data, mut n) => {
@@ -579,10 +662,50 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     continue;
                 }
                 
-                let qry = Query::new(Operations::Add(key, data, n));
-                do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream, &mut buf);
-                println!("{}", res);
+                let qry = &do_encode(&Query::new(Operations::Add(key.to_string(),
+                                                                 data, n)));
+
+                match cache.get(&key) {
+                    Some(ip) => {
+                        let addr = ip.to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                // TODO
+                                // Check the result
+                                // If get nothing, then ask master for slave ip
+                                println!("{:?}", res);
+                                continue;
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                    None => {}
+                }
+
+                // ask master for slave ip
+                do_write(&mut stream, &qry);
+                let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
+                match res[0].as_ref() {
+                    "ok" => {
+                        cache.insert(key, res[1].to_string());
+                        let addr = res[1].to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                println!("{:?}", res);
+                            }
+                            Err(e) => println!("(error) can not connect to slave: {}", e)
+                        }
+                    }
+                    _ => println!("{}", res[1])
+                }
             }
 
             Operations::Del(key, attrs) => {
@@ -629,12 +752,51 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     State::Done(attrs) => attrs,
                 };
 
-                let qry = Query::new(Operations::Del(key, State::Done(attrs)));
-                do_write(&mut stream, &do_encode(&qry));
-                let res = do_read(&mut stream, &mut buf);
-                println!("{}", res);
-            }
+                let qry = &do_encode(&Query::new(Operations::Del(key.to_string(),
+                                                                 State::Done(attrs))));
 
+                match cache.get(&key) {
+                    Some(ip) => {
+                        let addr = ip.to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                // TODO
+                                // Check the result
+                                // If get nothing, then ask master for slave ip
+                                println!("{:?}", res);
+                                continue;
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                    None => {}
+                }
+
+                // ask master for slave ip
+                do_write(&mut stream, &qry);
+                let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
+                match res[0].as_ref() {
+                    "ok" => {
+                        cache.insert(key, res[1].to_string());
+                        let addr = res[1].to_string() + &slave_port;
+                        let s: &str = &addr;
+                        match TcpStream::connect(s) {
+                            Ok(mut stream) => {
+                                do_write(&mut stream, &qry);
+                                let res: Vec<String> = do_decode(
+                                    &do_read(&mut stream, &mut buf));
+                                println!("{:?}", res);
+                            }
+                            Err(e) => println!("(error) can not connect to slave: {}", e)
+                        }
+                    }
+                    _ => println!("{}", res[1])
+                }
+            }
             _ => {}
         }
     }
