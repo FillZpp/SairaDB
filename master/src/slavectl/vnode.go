@@ -20,6 +20,8 @@ package slavectl
 
 import (
 	"strconv"
+	"encoding/json"
+	"sync/atomic"
 
 	"config"
 	"query"
@@ -46,27 +48,50 @@ func vnodeInit() {
 }
 
 func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
-	dups := make([]string, 0, DupNum)
-	dupMaster := -1
+	dups := make(map[string]int)
+	dupMaster := ""
+	var n uint64 = 0
 
 	for {
 		select {
 		case ctl := <-ctlChan:
-			if ctl[0] == "add" {
-				dups = append(dups, ctl[1])
+			switch ctl[0] {
+			case "add": 
+				dups[ctl[1]] = 1
 				if len(dups) == 1 {
-					dupMaster = 0
+					dupMaster = ctl[1]
 				}
+				n += 1
+			case "del":
+				if ctl[1] == dupMaster {
+					if len(dups) == 1 {
+						dupMaster = ""
+					} else {
+						// TODO
+						// Check other duplicate term
+						// and choose new master
+					}
+				}
+				delete(dups, ctl[1])
+				n -= 1
 			}
-			// TODO
-			_ = dupMaster
-			continue
+			atomic.StoreUint64(&VNodeDupNum[id], n)
 		case qry := <-qryChan:
-			// TODO
-			if VNodeDupNum[id] == 0 {
-				qry.ResChan<- "None duplicate for such vnode"
+			if dupMaster == "" {
+				b, _ := json.Marshal([]string{"err",
+					"(error) none duplicate for such vnode"})
+				qry.ResChan<- string(b)
+				continue
 			}
-			_ = qry
+
+			switch qry.Cli.Operation {
+			case "get": fallthrough
+			case "set": fallthrough
+			case "add": fallthrough
+			case "del":
+				b, _ := json.Marshal([]string{"ok", dupMaster})
+				qry.ResChan<- string(b)
+			}
 		}
 	}
 }

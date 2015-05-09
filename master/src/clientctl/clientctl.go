@@ -33,7 +33,7 @@ var (
 )
 
 func Init() {
-	port, _ = config.ConfMap["client-port"]
+	port, _ = config.ConfMap["port-client"]
 	cookie, _ = config.ConfMap["client-cookie"]
 
 	listener, err := net.Listen("tcp", ":" + port)

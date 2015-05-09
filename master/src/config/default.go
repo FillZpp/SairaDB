@@ -31,9 +31,9 @@ var BoolConfs = []string {
 }
 
 var UintConfs = []string {
-	"client-port",
-	"master-port",
-	"slave-port",
+	"port-client",
+	"port-master",
+	"port-slave",
 	"vnode-num",
 	"dup-num",
 }
@@ -46,9 +46,9 @@ func defaultConf() {
 	ConfMap["data-dir"] = path.Join(HomeDir, "/saira_data")
 	ConfMap["log-level"] = "error"
 
-	ConfMap["client-port"] = "4400"
-	ConfMap["master-port"] = "4401"
-	ConfMap["slave-port"]  = "4402"
+	ConfMap["port-client"] = "4400"
+	ConfMap["port-master"] = "4401"
+	ConfMap["port-slave"]  = "4402"
 
 	ckMd5 := fmt.Sprintf("%x", md5.Sum([]byte("")))
 	ConfMap["client-cookie"] = ckMd5

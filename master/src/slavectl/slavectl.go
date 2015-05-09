@@ -23,6 +23,7 @@ import (
 	"os"
 	"fmt"
 	"sync"
+	"unsafe"
 
 	"config"
 	"slog"
@@ -49,15 +50,18 @@ var (
 	port string
 	cookie string
 
-	Slaves = make(map[string]*Slave)
+	Slaves unsafe.Pointer  // map[string]*Slave
 	mutex sync.Mutex
 )
 
 
 func Init() {
 	vnodeInit()
+
+	slaves := make(map[string]*Slave)
+	Slaves = unsafe.Pointer(&slaves);
 	
-	port, _ = config.ConfMap["slave-port"]
+	port, _ = config.ConfMap["port-slave"]
 	cookie, _ = config.ConfMap["slave-cookie"]
 	listener, err := net.Listen("tcp", ":" + port)
 	if err != nil {

@@ -19,8 +19,8 @@
 package query
 
 type Query struct {
-	Id string
 	Cli CliQuery
+	CurrDB string
 	ResChan chan string
 }
 

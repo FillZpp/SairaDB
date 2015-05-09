@@ -29,7 +29,6 @@ import (
 	"query"
 	"meta"
 	"csthash"
-	"stime"
 )
 
 func handlerLog(ip, reason string) {
@@ -126,7 +125,6 @@ func clientHandler(conn net.Conn) {
 			ret := "ok"
 			if _, ok := (*databases)[qry.Name]; ok {
 				currentDB = qry.Name
-				fmt.Println("use", currentDB)
 			} else {
 				ret = fmt.Sprintf("(error) database '%v' does not exist.",
 					qry.Name);
@@ -135,17 +133,13 @@ func clientHandler(conn net.Conn) {
 		default:
 			resChan := make(chan string)
 			qryChan := csthash.FindVNode(qry.Name)
-			start := atomic.LoadInt64(&stime.UnixTime)
 			qryChan<- query.Query{
-				stime.GetID(),
 				qry,
+				currentDB,
 				resChan,
 			}
 			res := <-resChan
-			end := atomic.LoadInt64(&stime.UnixTime)
-			b, _ := json.Marshal([]string{res,
-				fmt.Sprintf("%0.2f", float64(end - start)/1e9)})
-			common.ConnWrite(b, conn, 5000)
+			common.ConnWriteString(res, conn, 5000)
 		}
 	}
 }

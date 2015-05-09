@@ -58,7 +58,7 @@ var (
 )
 
 func Init() {
-	port, _ = config.ConfMap["master-port"]
+	port, _ = config.ConfMap["port-master"]
 	cookie, _ = config.ConfMap["master-cookie"]
 	MasterList = make([]*MasterCtl, 1, len(config.MasterList) - 1)
 	

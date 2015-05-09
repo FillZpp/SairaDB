@@ -25,6 +25,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"encoding/json"
+	"unsafe"
 
 	"slog"
 	"common"
@@ -62,7 +63,8 @@ func slaveHandler(conn net.Conn) {
 
 	// check
 	mutex.Lock()
-	slv, ok := Slaves[ip]
+	slaves := (*map[string]*Slave)(atomic.LoadPointer(&Slaves))
+	slv, ok := (*slaves)[ip]
 	if !ok {
 		var rwMutex sync.RWMutex
 		slv = &Slave{
@@ -74,7 +76,8 @@ func slaveHandler(conn net.Conn) {
 			0,
 			0,
 		}
-		Slaves[ip] = slv
+		(*slaves)[ip] = slv
+		atomic.SwapPointer(&Slaves, unsafe.Pointer(slaves))
 	}
 	mutex.Unlock()
 	
@@ -124,6 +127,7 @@ func recvSlave(conn net.Conn, slv *Slave) {
 		for _, i := range arr {
 			if i < csthash.VNodeNum {
 				vnodes = append(vnodes, i)
+				VNodeCtls[i]<- []string{"add", slv.ip}
 			}
 		}
 		slv.rwMutex.Lock()
