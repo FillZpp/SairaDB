@@ -18,11 +18,11 @@
 
 extern crate crypto;
 extern crate getopts;
-extern crate libc;
 
 use std::io::{stderr, Write};
 use std::collections::HashMap;
 use std::env;
+use super::libc;
 use self::getopts::Options;
 use self::crypto::digest::Digest;
 use self::crypto::md5::Md5;
