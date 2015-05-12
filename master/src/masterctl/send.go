@@ -33,7 +33,7 @@ import (
 
 func sendLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("master controller send task (%v): %v", ip, reason)
+		fmt.Sprintf("(ERR) Master controller send task (%v): %v", ip, reason)
 }
 
 func sendTask(idx int, ip string, sendChan chan SendMessage) {

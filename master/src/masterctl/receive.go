@@ -29,7 +29,7 @@ import (
 
 func recvLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("master controller receive task (%v): %v", ip, reason)
+		fmt.Sprintf("(ERR) Master controller receive task (%v): %v", ip, reason)
 }
 
 func receiveTask(idx int, ip string, connChan chan net.Conn,

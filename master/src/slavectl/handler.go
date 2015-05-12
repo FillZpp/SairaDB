@@ -119,7 +119,8 @@ func recvSlave(conn net.Conn, slv *Slave) {
 		handlerLog(slv.ip, err.Error())
 		atomic.StoreInt32(&slv.recvStatus, 0)
 	}
-	
+
+	m := make(map[uint64]string)
 	var arr []uint64
 	err = json.Unmarshal([]byte(msg), &arr)
 	if err == nil {
@@ -127,7 +128,12 @@ func recvSlave(conn net.Conn, slv *Slave) {
 		for _, i := range arr {
 			if i < csthash.VNodeNum {
 				vnodes = append(vnodes, i)
-				VNodeCtls[i]<- []string{"add", slv.ip}
+				resChan := make(chan string)
+				VNodeCtls[i]<- VNodeCtl{
+					[]string{"add", slv.ip},
+					resChan,
+				}
+				m[i] = <-resChan
 			}
 		}
 		slv.rwMutex.Lock()
@@ -135,7 +141,8 @@ func recvSlave(conn net.Conn, slv *Slave) {
 		slv.rwMutex.Unlock()
 	}
 
-	err = common.ConnWriteString("ok", conn, 1000)
+	b, _ := json.Marshal(m)
+	err = common.ConnWrite(b, conn, 1000)
 }
 
 

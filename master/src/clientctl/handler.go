@@ -33,7 +33,7 @@ import (
 
 func handlerLog(ip, reason string) {
 	slog.LogChan<-
-		fmt.Sprintf("client controller handle (%v): %v", ip, reason)
+		fmt.Sprintf("(ERR) Client controller handle (%v): %v", ip, reason)
 }
 
 func clientHandler(conn net.Conn) {
@@ -67,10 +67,16 @@ func clientHandler(conn net.Conn) {
 		return
 	}
 	
+	slog.LogChan<- fmt.Sprintf("Client (%v) connected successfully", ip)
+	
 	currentDB := "default"
 	for {
 		msg, err = common.ConnRead(buf, conn, -1)
 		if err != nil {
+			if err.Error() == "EOF" {
+				slog.LogChan<- fmt.Sprintf("Client (%v) disconnected", ip)
+				return
+			}
 			handlerLog(ip, err.Error())
 			return
 		}

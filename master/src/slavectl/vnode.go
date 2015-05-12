@@ -28,26 +28,31 @@ import (
 	"csthash"
 )
 
+type VNodeCtl struct {
+	cont []string
+	resChan chan string
+}
+
 var (
-	VNodeCtls []chan []string
+	VNodeCtls []chan VNodeCtl
 	VNodeDupNum []uint64
 	DupNum uint64
 )
 
 func vnodeInit() {
 	DupNum, _ = strconv.ParseUint(config.ConfMap["dup-num"], 0, 0)
-	VNodeCtls = make([]chan []string, csthash.VNodeNum)
+	VNodeCtls = make([]chan VNodeCtl, csthash.VNodeNum)
 	VNodeDupNum = make([]uint64, csthash.VNodeNum)
 	var i uint64
 	for i = 0; i < csthash.VNodeNum; i++ {
-		ch := make(chan []string, 100)
+		ch := make(chan VNodeCtl, 100)
 		VNodeCtls[i] = ch
 		VNodeDupNum[i] = 0
 		go vnodeTask(i, csthash.VNodeHashs[i].Ch, ch)
 	}
 }
 
-func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
+func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan VNodeCtl) {
 	dups := make(map[string]int)
 	dupMaster := ""
 	var n uint64 = 0
@@ -55,15 +60,15 @@ func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
 	for {
 		select {
 		case ctl := <-ctlChan:
-			switch ctl[0] {
+			switch ctl.cont[0] {
 			case "add": 
-				dups[ctl[1]] = 1
+				dups[ctl.cont[1]] = 1
 				if len(dups) == 1 {
-					dupMaster = ctl[1]
+					dupMaster = ctl.cont[1]
 				}
 				n += 1
 			case "del":
-				if ctl[1] == dupMaster {
+				if ctl.cont[1] == dupMaster {
 					if len(dups) == 1 {
 						dupMaster = ""
 					} else {
@@ -72,10 +77,11 @@ func vnodeTask(id uint64, qryChan chan query.Query, ctlChan chan []string) {
 						// and choose new master
 					}
 				}
-				delete(dups, ctl[1])
+				delete(dups, ctl.cont[1])
 				n -= 1
 			}
 			atomic.StoreUint64(&VNodeDupNum[id], n)
+			ctl.resChan<- dupMaster
 		case qry := <-qryChan:
 			if dupMaster == "" {
 				b, _ := json.Marshal([]string{"err",
