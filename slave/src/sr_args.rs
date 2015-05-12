@@ -16,18 +16,17 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-extern crate crypto;
 extern crate getopts;
-extern crate libc;
 
 use std::io::{stderr, Write};
 use std::collections::HashMap;
 use std::path::Path;
 use std::fs::{self, PathExt};
 use std::env;
+use super::libc;
+use super::crypto::digest::Digest;
+use super::crypto::md5::Md5;
 use self::getopts::Options;
-use self::crypto::digest::Digest;
-use self::crypto::md5::Md5;
 
 
 pub fn get_flags() -> HashMap<String, String> {
@@ -38,7 +37,8 @@ pub fn get_flags() -> HashMap<String, String> {
     opts.optflag("h", "help", "Print this help menu");
     opts.optopt("", "conf-dir", "Find config files in <DIR>", "DIR");
     opts.optopt("", "data-dir", "Save data in <DIR>/slave", "DIR");
-    opts.optopt("", "cookie", "Set cookie for connection safety", "COOKIE");
+    opts.optopt("", "cookie-master", "Set cookie for master connection", "COOKIE");
+    opts.optopt("", "cookie-client", "Set cookie for client connection", "COOKIE");
     opts.optopt("", "port", "Listen port for other slave", "PORT");
     opts.optopt("", "port-client", "Listen port for client", "PORT");
     opts.optopt("", "master-port", "Port master listened for slave", "PORT");
@@ -87,8 +87,18 @@ pub fn get_flags() -> HashMap<String, String> {
         dir
     });
 
-    flag_map.insert("cookie".to_string(), {
-        let ck = match matches.opt_str("cookie") {
+    flag_map.insert("cookie-master".to_string(), {
+        let ck = match matches.opt_str("cookie-master") {
+            Some(a) => a,
+            None => "".to_string()
+        };
+        let mut cal = Md5::new();
+        cal.input_str(&ck);
+        cal.result_str().to_string()
+    });
+
+    flag_map.insert("cookie-client".to_string(), {
+        let ck = match matches.opt_str("cookie-client") {
             Some(a) => a,
             None => "".to_string()
         };

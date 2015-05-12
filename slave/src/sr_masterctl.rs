@@ -16,10 +16,14 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-use std::thread;
+use std::collections::HashMap;
+use std::net;
+use std::sync::mpsc::Sender;
+use super::libc;
 
 
-pub fn sleep(t: u32) {
-    thread::sleep_ms(t);
+pub fn init(masters: Vec<String>, vnodes: Vec<u64>,
+            map: &HashMap<String, String>, log_sender: Sender<String>) {
+    
 }
 

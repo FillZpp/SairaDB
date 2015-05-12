@@ -22,12 +22,12 @@ mod sr_db;
 mod sr_vnode;
 
 pub use self::sr_db::*;
-pub use self::sr_vnode::*;
 use std::sync::mpsc::Sender;
+
 
 static mut td_num: u32 = 0;
 
-pub fn init(log_sender: Sender<String>) {
+pub fn init(dir: String, log_sender: Sender<String>) -> Vec<u64> {
     unsafe {
         td_num = match sys_info::cpu_num() {
             Ok(n) => if n < 2 { 2 } else { n },
@@ -38,5 +38,7 @@ pub fn init(log_sender: Sender<String>) {
             }
         }
     }
+
+    sr_vnode::init(dir)
 }
 

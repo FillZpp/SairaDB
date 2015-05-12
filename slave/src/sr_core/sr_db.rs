@@ -19,7 +19,7 @@
 extern crate serialize;
 
 use std::collections::{BTreeMap, VecDeque};
-use std::sync::atomic::{AtomicPtr, AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;

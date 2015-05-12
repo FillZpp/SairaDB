@@ -24,8 +24,6 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::io::{stderr, Write};
 use std::fs::{create_dir_all, File};
 use std::path::Path;
-//use std::old_io::timer::Timer;
-//use std::time::Duration;
 
 
 pub fn init(dir: String) -> (Sender<String>, thread::JoinHandle<()>) {

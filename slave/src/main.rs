@@ -22,12 +22,15 @@
 #![feature(rustc_private)]
 
 
+extern crate libc;
+extern crate crypto;
+
 mod sr_prefix;
 mod sr_args;
 mod sr_config;
 mod sr_log;
 mod sr_core;
-mod sr_time;
+mod sr_masterctl;
 
 
 fn main() {
@@ -37,13 +40,12 @@ fn main() {
     let (log_sender, log_thread)
         = sr_log::init(conf_map.get("data-dir").unwrap().to_string());
 
-    sr_core::init(log_sender);
+    let vnodes = sr_core::init(conf_map.get("data-dir").unwrap().to_string(),
+                               log_sender.clone());
+    
+    sr_masterctl::init(masters, vnodes, &conf_map, log_sender.clone());
 
-    println!("{:?}", conf_map);
-    println!("{:?}", masters);
-
-
-    sr_time::sleep(10);
+    //std::thread::sleep_ms(10);
 }
 
 

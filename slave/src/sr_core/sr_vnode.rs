@@ -18,7 +18,11 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT};
+use std::fs::{self, PathExt};
+use std::io::{stderr, Write};
+use std::path::Path;
 use super::sr_db::Database;
+use super::super::libc;
 
 
 #[allow(dead_code)]
@@ -41,5 +45,42 @@ impl VNode {
             dbs: HashMap::new()
         }
     }
+}
+
+pub fn init(dir: String) -> Vec<u64> {
+    let data_dir = dir + "/slave/data/";
+    let _ = fs::create_dir_all(Path::new(&data_dir));
+    let mut vnodes = Vec::new();
+
+    for entry in match fs::read_dir(data_dir) {
+        Ok(a) => a,
+        Err(e) => {
+            let _ = writeln!(&mut stderr(), "Error:\n read data_dir error:\n{}", e);
+            unsafe { libc::exit(3); }
+        }
+    } {
+        match entry {
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_dir() {
+                    if let Some(name) = path.file_name() {
+                        if let Some(name) = name.to_str() {
+                            let n: Result<u64, _> = name.parse();
+                            match n {
+                                Ok(n) => vnodes.push(n),
+                                Err(_) => {}
+                            }
+                        }
+                    }
+
+                    // TODO
+                    // Read vnode term
+                }
+            }
+            Err(e) => {}
+        }
+    }
+    
+    vnodes
 }
 

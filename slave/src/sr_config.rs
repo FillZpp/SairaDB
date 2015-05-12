@@ -16,12 +16,11 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-extern crate libc;
-
 use std::io::{stderr, Write, Read};
 use std::collections::HashMap;
 use std::fs::File;
 use std::net;
+use super::libc;
 
 
 pub fn init(map: &HashMap<String, String>)  -> Vec<String> {
