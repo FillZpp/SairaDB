@@ -176,6 +176,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
     println!("SairaDB Client {}", env!("CARGO_PKG_VERSION"));
 
     let mut operation = Operations::None;
+    let mut cur_db = "default".to_string();
     loop {
         let mut line = "".to_string();
         let to_readline = match &operation {
@@ -224,7 +225,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                             continue;
                         }
 
-                        let qry = Query::new(Operations::ShowDBs);
+                        let qry = vec!["show_dbs".to_string()];
                         do_write(&mut stream, &do_encode(&qry));
                         let dbs: Vec<String> = do_decode(&do_read(&mut stream,
                                                                   &mut buf));
@@ -239,7 +240,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                             None => continue
                         };
                         
-                        let qry = Query::new(Operations::Create(name));
+                        let qry = vec!["create".to_string(), name];
                         do_write(&mut stream, &do_encode(&qry));
                         let res = do_read(&mut stream, &mut buf);
                         println!("{}", res);
@@ -251,7 +252,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                             None => continue
                         };
 
-                        let qry = Query::new(Operations::Drop(name));
+                        let qry = vec!["drop".to_string(), name];
                         do_write(&mut stream, &do_encode(&qry));
                         let res = do_read(&mut stream, &mut buf);
                         println!("{}", res);
@@ -263,9 +264,12 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                             None => continue
                         };
 
-                        let qry = Query::new(Operations::Use(name));
+                        let qry = vec!["use".to_string(), name.to_string()];
                         do_write(&mut stream, &do_encode(&qry));
                         let res = do_read(&mut stream, &mut buf);
+                        if &res == "ok" {
+                            cur_db = name;
+                        }
                         println!("{}", res);
                     }
 
@@ -534,8 +538,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 };
                 
                 let qry = do_encode(
-                    &Query::new(Operations::Get(key.to_string(),
-                                                State::Done(attrs))));
+                    &Query::new(cur_db.to_string(),
+                        Operations::Get(key.to_string(), State::Done(attrs))));
 
                 match cache.get(&key) {
                     Some(ip) => {
@@ -598,8 +602,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     continue;
                 }
                 
-                let qry = &do_encode(&Query::new(Operations::Set(key.to_string(),
-                                                                data, n)));
+                let qry = &do_encode(&Query::new(cur_db.to_string(),
+                    Operations::Set(key.to_string(), data, n)));
 
                 match cache.get(&key) {
                     Some(ip) => {
@@ -662,8 +666,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     continue;
                 }
                 
-                let qry = &do_encode(&Query::new(Operations::Add(key.to_string(),
-                                                                 data, n)));
+                let qry = &do_encode(&Query::new(cur_db.to_string(),
+                    Operations::Add(key.to_string(), data, n)));
 
                 match cache.get(&key) {
                     Some(ip) => {
@@ -752,8 +756,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     State::Done(attrs) => attrs,
                 };
 
-                let qry = &do_encode(&Query::new(Operations::Del(key.to_string(),
-                                                                 State::Done(attrs))));
+                let qry = &do_encode(&Query::new(cur_db.to_string(),
+                    Operations::Del(key.to_string(), State::Done(attrs))));
 
                 match cache.get(&key) {
                     Some(ip) => {
@@ -797,8 +801,7 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                     _ => println!("{}", res[1])
                 }
             }
-            _ => {}
-        }
+        } // match operation
     }
 }
 

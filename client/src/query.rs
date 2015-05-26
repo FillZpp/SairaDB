@@ -27,12 +27,6 @@ pub enum State<T> {
 
 pub enum Operations {
     None,
-
-    ShowDBs,
-    Create(String),
-    Drop(String),
-    Use(String),
-    
     Get(String, State<Vec<String>>),
     Set(String, String, i32),
     Add(String, String, i32),
@@ -43,55 +37,16 @@ pub enum Operations {
 #[allow(non_snake_case)]
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Query {
-    Operation: String,
-    Name: String,
-    Attributes: Vec<String>,
-    Data: String
+    operation: String,
+    db: String,
+    name: String,
+    attributes: Vec<String>,
+    data: String
 }
 
 impl Query {
-    pub fn new(oper: Operations) -> Query {
+    pub fn new(db: String, oper: Operations) -> Query {
         match oper {
-            Operations::None =>
-                Query {
-                    Operation: "none".to_string(),
-                    Name: "".to_string(),
-                    Attributes: Vec::new(),
-                    Data: "".to_string(),
-                },
-
-            Operations::ShowDBs =>
-                Query {
-                    Operation: "show_dbs".to_string(),
-                    Name: "".to_string(),
-                    Attributes: Vec::new(),
-                    Data: "".to_string(),
-                },
-
-            Operations::Create(name) =>
-                Query {
-                    Operation: "create".to_string(),
-                    Name: name,
-                    Attributes: Vec::new(),
-                    Data: "".to_string(),
-                },
-
-            Operations::Drop(name) =>
-                Query {
-                    Operation: "drop".to_string(),
-                    Name: name,
-                    Attributes: Vec::new(),
-                    Data: "".to_string(),
-                },
-
-            Operations::Use(name) =>
-                Query {
-                    Operation: "use".to_string(),
-                    Name: name,
-                    Attributes: Vec::new(),
-                    Data: "".to_string(),
-                },
-
             Operations::Get(key, attrs) => {
                 let attrs = match attrs {
                     State::Done(a) => a,
@@ -101,27 +56,30 @@ impl Query {
                     }
                 };
                 Query {
-                    Operation: "get".to_string(),
-                    Name: key,
-                    Attributes: attrs,
-                    Data: "".to_string()
+                    operation: "get".to_string(),
+                    db: db,
+                    name: key,
+                    attributes: attrs,
+                    data: "".to_string()
                 }
             }
 
             Operations::Set(key, data, _) =>
                 Query {
-                    Operation: "set".to_string(),
-                    Name: key,
-                    Attributes: Vec::new(),
-                    Data: data
+                    operation: "set".to_string(),
+                    db: db,
+                    name: key,
+                    attributes: Vec::new(),
+                    data: data
                 },
 
             Operations::Add(key, data, _) =>
                 Query {
-                    Operation: "add".to_string(),
-                    Name: key,
-                    Attributes: Vec::new(),
-                    Data: data
+                    operation: "add".to_string(),
+                    db: db,
+                    name: key,
+                    attributes: Vec::new(),
+                    data: data
                 },
 
             Operations::Del(key, attrs) => {
@@ -133,12 +91,15 @@ impl Query {
                     }
                 };
                 Query {
-                    Operation: "del".to_string(),
-                    Name: key,
-                    Attributes: attrs,
-                    Data: "".to_string()
+                    operation: "del".to_string(),
+                    db: db,
+                    name: key,
+                    attributes: attrs,
+                    data: "".to_string()
                 }
             }
+
+            _ => unreachable!()
         }
     }
 }
