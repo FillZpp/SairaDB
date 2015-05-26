@@ -96,9 +96,10 @@ impl Database {
             cur_id: AtomicUsize::new(1),
             pages: vd,
         };
-        
+
+        let db_name = name.to_string();
         thread::spawn(move || {
-            db_task(db_cont, rx, log_sender);
+            db_task(db_name, db_cont, rx, log_sender);
         });
     
         Database {
@@ -136,8 +137,8 @@ fn page_task(db_cont: Arc<DBContent>, receiver: Receiver<Query>,
 }
 
 #[allow(dead_code)]
-fn db_task(db_cont: DBContent, receiver: Receiver<Query>,
-           log_sender: Sender<String>) {
+fn db_task(db_name: String, db_cont: DBContent,
+           receiver: Receiver<Query>, log_sender: Sender<String>) {
     let db_cont = Arc::new(db_cont);
     let td_num = unsafe { super::td_num };
     let mut p_tasks = Vec::with_capacity(td_num as usize);
@@ -147,7 +148,8 @@ fn db_task(db_cont: DBContent, receiver: Receiver<Query>,
         let task_num = Arc::new(ATOMIC_USIZE_INIT);
         let task_num_clone = task_num.clone();
         let log_sender = log_sender.clone();
-        thread::spawn(move || {
+        let td_name = format!("{}{}", db_name, i);
+        let _ = thread::Builder::new().name(td_name).spawn(move || {
             page_task(db_cont, rx, task_num_clone, log_sender);
         });
 

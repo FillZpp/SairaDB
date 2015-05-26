@@ -77,7 +77,7 @@ pub fn init(dir: String) -> Vec<u64> {
                     // Read vnode term
                 }
             }
-            Err(e) => {}
+            Err(_) => {}
         }
     }
     
