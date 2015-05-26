@@ -27,7 +27,6 @@ import (
 
 	"config"
 	"slog"
-	"query"
 )
 
 type RecvRegister struct {
@@ -35,12 +34,16 @@ type RecvRegister struct {
 	ch chan string
 }
 
+type SlaveQuery struct {
+	operation string
+}
+
 type Slave struct {
 	ip string
 	vnodes []uint64
 	rwMutex sync.RWMutex
 	
-	sendChan chan query.Query
+	sendChan chan SlaveQuery
 	recvChan chan RecvRegister
 	sendStatus int32
 	recvStatus int32

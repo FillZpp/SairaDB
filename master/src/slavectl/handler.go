@@ -29,7 +29,6 @@ import (
 
 	"slog"
 	"common"
-	"query"
 	"csthash"
 )
 
@@ -71,7 +70,7 @@ func slaveHandler(conn net.Conn) {
 			ip,
 			make([]uint64, 0),
 			rwMutex,
-			make(chan query.Query, 10000),
+			make(chan SlaveQuery, 10000),
 			make(chan RecvRegister, 10000),
 			0,
 			0,

@@ -26,7 +26,6 @@ import (
 	
 	"slog"
 	"common"
-	"query"
 	"meta"
 	"csthash"
 )
@@ -69,7 +68,6 @@ func clientHandler(conn net.Conn) {
 	
 	slog.LogChan<- fmt.Sprintf("Client (%v) connected successfully", ip)
 	
-	currentDB := "default"
 	for {
 		msg, err = common.ConnRead(buf, conn, -1)
 		if err != nil {
@@ -81,16 +79,19 @@ func clientHandler(conn net.Conn) {
 			return
 		}
 
-		var qry query.CliQuery
+		var qry []string
 		err = json.Unmarshal([]byte(msg), &qry)
 		if err != nil {
-			fmt.Println("json parse error");
-			common.ConnWriteString("(error) parse error", conn, 5000)
+			common.ConnWriteString("(error) master parse error", conn, 5000)
 			continue
 		}
 
-		switch qry.Operation {
-		case "show_dbs":
+		if len(qry) == 0 {
+			common.ConnWriteString("(error) master get wrong query", conn, 5000)
+			continue
+		}
+
+		if qry[0] == "show_dbs" {
 			databases := (*map[string]int)(
 				atomic.LoadPointer(&(meta.Databases)))
 			keys := make([]string, 0, len(*databases))
@@ -99,12 +100,21 @@ func clientHandler(conn net.Conn) {
 			}
 			b, _ = json.Marshal(keys)
 			common.ConnWrite(b, conn, 5000)
+			continue
+		}
+
+		if len(qry) < 2 {
+			common.ConnWriteString("(error) master get wrong query", conn, 5000)
+			continue
+		}
+
+		switch qry[0] {
 		case "create":
 			errChan := make(chan error)
 			meta.DBChan<- meta.AlterDB{
 				errChan,
 				"create",
-				[]string{qry.Name},
+				[]string{qry[1]},
 			}
 			ret := "ok"
 			err = <-errChan
@@ -117,7 +127,7 @@ func clientHandler(conn net.Conn) {
 			meta.DBChan<- meta.AlterDB{
 				errChan,
 				"drop",
-				[]string{qry.Name},
+				[]string{qry[1]},
 			}
 			ret := "ok"
 			err = <-errChan
@@ -129,23 +139,15 @@ func clientHandler(conn net.Conn) {
 			databases := (*map[string]int)(
 				atomic.LoadPointer(&(meta.Databases)))
 			ret := "ok"
-			if _, ok := (*databases)[qry.Name]; ok {
-				currentDB = qry.Name
-			} else {
+			if _, ok := (*databases)[qry[1]]; !ok {
 				ret = fmt.Sprintf("(error) database '%v' does not exist.",
-					qry.Name);
+					qry[1]);
 			}
 			common.ConnWriteString(ret, conn, 5000)
-		default:
-			resChan := make(chan string)
-			qryChan := csthash.FindVNode(qry.Name)
-			qryChan<- query.Query{
-				qry,
-				currentDB,
-				resChan,
-			}
-			res := <-resChan
-			common.ConnWriteString(res, conn, 5000)
+		case "key": 
+			id := csthash.FindVNode(qry[1])
+			fmt.Println(id)
+			//common.ConnWriteString(res, conn, 5000)
 		}
 	}
 }

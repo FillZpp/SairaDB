@@ -25,41 +25,32 @@ import (
 	"fmt"
 
 	"config"
-	"query"
 )
-
-type VNodeHash struct {
-	Hash uint64
-	Ch chan query.Query
-}
 
 var (
 	Mod uint64 = uint64(math.Pow(2, 32))
 	VNodeNum uint64
-	VNodeHashs []VNodeHash
+	VNodeHashs []uint64
 )
 
 func Init() {
 	VNodeNum, _ = strconv.ParseUint(config.ConfMap["vnode-num"], 0, 0)
-	VNodeHashs = make([]VNodeHash, 0, VNodeNum)
+	VNodeHashs = make([]uint64, 0, VNodeNum)
 
 	tmp := Mod / VNodeNum
 	var i uint64
 	for i = 0; i < VNodeNum; i++ {
-		VNodeHashs = append(VNodeHashs, VNodeHash{
-			(i + 1) * tmp,
-			make(chan query.Query, 10000),
-		})
+		VNodeHashs = append(VNodeHashs, (i + 1) * tmp)
 	}
 }
 
-func FindVNode(key string) chan query.Query {
+func FindVNode(key string) uint64 {
 	b := md5.Sum([]byte(key))
 	h, _ := strconv.ParseUint(fmt.Sprintf("0x%x", b[:4]), 0, 0)
 
 	var i uint64
 	for i = 0; i < VNodeNum; i++ {
-		if h < VNodeHashs[i].Hash {
+		if h < VNodeHashs[i] {
 			if i == 0 {
 				i = VNodeNum
 			}
@@ -67,7 +58,7 @@ func FindVNode(key string) chan query.Query {
 		}
 	}
 
-	return VNodeHashs[i-1].Ch
+	return i
 }
 
 
