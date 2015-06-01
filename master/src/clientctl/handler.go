@@ -28,6 +28,7 @@ import (
 	"common"
 	"meta"
 	"csthash"
+	"slavectl"
 )
 
 func handlerLog(ip, reason string) {
@@ -146,8 +147,17 @@ func clientHandler(conn net.Conn) {
 			common.ConnWriteString(ret, conn, 5000)
 		case "key": 
 			id := csthash.FindVNode(qry[1])
-			fmt.Println(id)
-			//common.ConnWriteString(res, conn, 5000)
+			ptr := atomic.LoadPointer(&slavectl.VNodeDupMaster[id])
+			ret := make([]string, 0, 2)
+			if ptr == nil {
+				ret = append(ret, "error")
+				ret = append(ret, "(error) no slave for such data")
+			} else {
+				ret = append(ret, "ok")
+				ret = append(ret, *(*string)(ptr))
+			}
+			b, _ := json.Marshal(&ret)
+			common.ConnWrite(b, conn, 5000)
 		}
 	}
 }
