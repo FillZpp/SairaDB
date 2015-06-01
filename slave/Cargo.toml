@@ -9,4 +9,5 @@ sys-info = "*"
 getopts = "*"
 rust-crypto = "*"
 time = "*"
+rustc-serialize = "*"
 
