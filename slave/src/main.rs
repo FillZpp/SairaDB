@@ -19,7 +19,6 @@
 #![feature(libc)]
 #![feature(path_ext)]
 #![feature(lookup_host, ip_addr)]
-#![feature(rustc_private)]
 
 
 extern crate libc;

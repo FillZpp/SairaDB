@@ -16,7 +16,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-extern crate serialize;
+extern crate rustc_serialize;
 
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
@@ -24,7 +24,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::ops::Drop;
-use self::serialize::json::Json;
+use self::rustc_serialize::json::Json;
 
 
 #[allow(dead_code)]

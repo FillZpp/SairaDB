@@ -80,6 +80,12 @@ fn read_masters(conf_dir: String) -> Vec<String> {
         }
     }
 
+    if masters.len() == 0 {
+        let _ = writeln!(&mut stderr(),
+                         "Error:\nNo master");
+        unsafe { libc::exit(3); }
+    }
+
     masters
 }
 
