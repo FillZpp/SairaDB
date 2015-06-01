@@ -543,9 +543,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 match cache.get(&key) {
                     Some(ip) => {
-                        let addr = ip.to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(ip.to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -563,14 +562,13 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
 
                 // ask master for slave ip
-                do_write(&mut stream, &qry);
+                do_write(&mut stream, &do_encode(&vec!["key", &key]));
                 let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
                 match res[0].as_ref() {
                     "ok" => {
                         cache.insert(key, res[1].to_string());
-                        let addr = res[1].to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(res[1].to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -607,9 +605,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 match cache.get(&key) {
                     Some(ip) => {
-                        let addr = ip.to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(ip.to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -627,14 +624,13 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
 
                 // ask master for slave ip
-                do_write(&mut stream, &qry);
+                do_write(&mut stream, &do_encode(&vec!["key", &key]));
                 let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
                 match res[0].as_ref() {
                     "ok" => {
                         cache.insert(key, res[1].to_string());
-                        let addr = res[1].to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(res[1].to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -671,9 +667,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 match cache.get(&key) {
                     Some(ip) => {
-                        let addr = ip.to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(ip.to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -691,14 +686,13 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
 
                 // ask master for slave ip
-                do_write(&mut stream, &qry);
+                do_write(&mut stream, &do_encode(&vec!["key", &key]));
                 let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
                 match res[0].as_ref() {
                     "ok" => {
                         cache.insert(key, res[1].to_string());
-                        let addr = res[1].to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(res[1].to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -761,9 +755,8 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
 
                 match cache.get(&key) {
                     Some(ip) => {
-                        let addr = ip.to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(ip.to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
@@ -781,14 +774,13 @@ pub fn start_repl(flag_map: HashMap<String, String>) {
                 }
 
                 // ask master for slave ip
-                do_write(&mut stream, &qry);
+                do_write(&mut stream, &do_encode(&vec!["key", &key]));
                 let res: Vec<String> = do_decode(&do_read(&mut stream, &mut buf));
                 match res[0].as_ref() {
                     "ok" => {
                         cache.insert(key, res[1].to_string());
-                        let addr = res[1].to_string() + &slave_port;
-                        let s: &str = &addr;
-                        match TcpStream::connect(s) {
+                        let addr: &str = &(res[1].to_string() + &slave_port);
+                        match TcpStream::connect(addr) {
                             Ok(mut stream) => {
                                 do_write(&mut stream, &qry);
                                 let res: Vec<String> = do_decode(
